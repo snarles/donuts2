@@ -28,3 +28,9 @@ def sph_lattice(resolution, radius):
       as radius/resolution
     radius: radius of the sphere
     """
+    k = 2*resolution + 1
+    x = fullfact([k,k,k])/resolution - 1
+    nms = np.sum(np.abs(x)**2,axis=-1)**(1./2)
+    x = x[np.nonzero(nms <= 1)[0],:]
+    x = radius * x
+    return x 
