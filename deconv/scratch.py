@@ -8,7 +8,11 @@ def fullfact(levels):
 
     Parameters
     ----------
-    levels : list of integers specifying number of levels of each factor
+    levels : list of K integers specifying number of levels of each factor
+
+    Returns
+    -------
+    x : array with K columns, full factorial matrix with levels starting at 0
     """
     x = np.arange(levels[0]).reshape(levels[0],1)
     if len(levels) > 1:
@@ -20,13 +24,17 @@ def fullfact(levels):
     return x
 
 def sph_lattice(resolution, radius):
-    """ Creates a N x 3 array of points *inside* a sphere
+    """ Creates a ? x 3 array of points *inside* a sphere
 
     Parameters
     ----------
     resolution: determines the minimum distance between points
       as radius/resolution
     radius: radius of the sphere
+
+    Returns
+    -------
+    x : ? x 3 array of points
     """
     k = 2*resolution + 1
     x = fullfact([k,k,k])/resolution - 1
