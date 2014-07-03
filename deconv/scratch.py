@@ -23,6 +23,11 @@ def fullfact(levels):
             x = np.hstack([x2,x4])
     return x
 
+def norms(x) :
+    # computes the norms of the rows of x
+    nms = np.sum(np.abs(x)**2,axis=-1)**(1./2)
+    return nms
+
 def sph_lattice(resolution, radius):
     """ Creates a ? x 3 array of points *inside* a sphere
 
@@ -42,3 +47,27 @@ def sph_lattice(resolution, radius):
     x = x[np.nonzero(nms <= 1)[0],:]
     x = radius * x
     return x
+
+def ste_tan_kappa(grid, bvecs):
+    """ Generates the Steksjal-Tanner signal
+        for fibers oriented with directions and kappa determined by
+        grid, when measure in directions specified by bvecs.
+        Note: kappa will be norm of the vector in grid squared.
+
+    Parameters
+    ----------
+    grid: M x 3 numpy array of fiber directions with length
+      equal to square root of kappa
+    bvecs: N x 3 numpy array of unit vectors
+      corresponding to DWI measurement directions
+
+    Returns
+    -------
+    x : N x M numpy array, columns are ST kernel signals
+    """
+
+
+grid = sph_lattice(3,2)
+bvecs = np.random.normal(0,1,(100,3))
+nms = norms(bvecs)
+bvecs = np.multiply(bvecs,1/np.tile(nms.reshape(-1,1), (1,3)))
