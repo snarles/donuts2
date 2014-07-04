@@ -124,14 +124,14 @@ def cv_nnls(y,xs,k_folds):
     rp = np.random.permutation(n)/float(n)
     cve = np.zeros(k_folds)
     for i in range(k_folds):
-        filt_te = np.logical_and(rp >= (float(i)/k_folds), rp < (float(i)+1/k_folds))
-        y_tr = y[np.nonzero(logical_not(filt_te))]
+        filt_te = np.logical_and(rp >= (float(i)/k_folds), rp < ((float(i)+1)/k_folds))
+        y_tr = y[np.nonzero(np.logical_not(filt_te))]
         y_te = y[np.nonzero(filt_te)]
-        xs_tr = xs[np.nonzero(logical_not(filt_te))]
+        xs_tr = xs[np.nonzero(np.logical_not(filt_te))]
         xs_te = xs[np.nonzero(filt_te)]
-        beta = spo.nnls(xs_tr,y_tr)
-        yh = xs_te * beta
-        cve[i] = sum((yh - y_te)**2)
+        beta = spo.nnls(xs_tr,np.squeeze(y_tr))[0]
+        yh = np.dot(xs_te, beta)
+        cve[i] = sum((yh - np.squeeze(y_te))**2)
     return cve
 
 # setup bvecs and grid; using random points for now, but to be replaced by other code
@@ -152,7 +152,8 @@ beta = spo.nnls(xs,np.squeeze(y0))[0]
 est_pos = grid[np.nonzero(beta),:]
 est_w = beta[np.nonzero(beta)]
 
-#import dipy.data as dpd
-#s1 = dpd.get_sphere('symmetric362')
-#s2 = s1.subdivide() # s2 has 1442 vertices
+import dipy.data as dpd
+s1 = dpd.get_sphere('symmetric362')
+s2 = s1.subdivide() # s2 has 1442 vertices
+
 
