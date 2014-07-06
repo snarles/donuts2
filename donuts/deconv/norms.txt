@@ -1,0 +1,6 @@
+import numpy as np
+
+def norms(x) :
+    # computes the norms of the rows of x
+    nms = np.sum(np.abs(x)**2,axis=-1)**(1./2)
+    return nms
