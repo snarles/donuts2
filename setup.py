@@ -8,7 +8,8 @@ EXTENSIONS = [dict(name="donuts.emd",
 
 opts = dict(name='donuts',
             packages=['donuts',
-                      'donuts.emd'],
+                      'donuts.emd',
+                      'donuts.deconv'],
             ext_modules = [Extension(**e) for e in EXTENSIONS])
 
 if __name__ == '__main__':
