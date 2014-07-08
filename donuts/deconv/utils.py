@@ -93,9 +93,8 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma):
     
     Returns
     -------
-    signals : 2-length list
-    signals[0] : N x 1 numpy array, noiseless signal
-    signals[1] : N x 1 numpy array, noisy signal
+    y0 : N x 1 numpy array, noiseless signal
+    y1 : N x 1 numpy array, noisy signal
     """
     x = ste_tan_kappa(fibers, bvecs)
     n = np.shape(bvecs)[0]
@@ -103,7 +102,7 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma):
     raw_err = sigma*np.random.normal(0,1,(n,2))
     raw_err[:,0] = raw_err[:,0] + np.squeeze(y0)
     y1 = norms(raw_err).reshape(-1,1)
-    return [y0,y1]
+    return y0,y1
 
 def cv_nnls(y,xs,k_folds):
     """ Computes cross-validation error of regression y on xs
