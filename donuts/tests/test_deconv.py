@@ -23,9 +23,7 @@ def test_simulate_signal_kappa():
     true_kappa = 1.5
     true_pos = bvecs[[1,10,11],]
     true_w = np.array([1,1,1]).reshape((-1,1))
-    res = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,0.1)
-    y0=res[0]
-    y1=res[1]
+    y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,0.1)
     # test if NNLS recovers the correct positions for noiseless data
     kappa=1.5
     xs = du.ste_tan_kappa(np.sqrt(kappa)*grid,bvecs)
