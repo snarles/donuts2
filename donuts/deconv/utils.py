@@ -159,9 +159,9 @@ def ls_est(y,xs,grid):
     yh = np.dot(xs,beta).reshape(-1,1)
     return yh, beta, est_pos, est_w
 
-def sym_emd(true_pos, true_w, est_pos,est_w)
-    d1 = spd.cdist(true_pos,est_pos)
-    d2 = spd.cdist(true_pos,-est_pos)
-    dm = np.minimum(d1,d2)
+#def sym_emd(true_pos, true_w, est_pos,est_w)
+#    d1 = spd.cdist(true_pos,est_pos)
+#    d2 = spd.cdist(true_pos,-est_pos)
+#    dm = np.minimum(d1,d2)
 
 

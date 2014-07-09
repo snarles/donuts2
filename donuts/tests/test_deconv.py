@@ -15,7 +15,7 @@ grid = s2.vertices
 
 def test_fullfact():
     a = du.fullfact([3,3,3])
-    npt.assert_almost_equal(np.size(a),27)
+    npt.assert_almost_equal(np.size(a), 27)
 
 def test_normalize_rows():
     a = du.normalize_rows(np.random.normal(0,1,(10000,3)))
