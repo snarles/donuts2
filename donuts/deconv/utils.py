@@ -2,6 +2,9 @@ import numpy as np
 import scipy as sp
 import scipy.optimize as spo
 
+def rank_simple(vector):
+    return sorted(range(len(vector)), key=vector.__getitem__)
+
 def fullfact(levels):
     """ Creates a full factorial design matrix
 
@@ -131,5 +134,34 @@ def cv_nnls(y,xs,k_folds):
         cve[i] = sum((yh - np.squeeze(y_te))**2)
     return cve
 
+def ls_est(y,xs,grid):
+    """ Fits the SFM using NNLS
+
+    Parameters
+    ----------
+    y : n x 1 numpy array, signal
+    xs : n x p numpy array, design matrix
+    grid : p x 3 numpy array, candidate directions which were used to generate xs
+    
+    Outputs
+    -------
+    yh : n x 1 numpy array, predicted signal
+    beta : p x 1 numpy array, the regression coefficients
+    est_w : ? x 1 numpy array, the nonnegative entries of beta in descending order
+    est_pos : ? x 3 numpy array, the points in grid corresponding to est_w
+    """
+    beta = spo.nnls(xs,np.squeeze(y0))[0]
+    est_pos = grid[np.squeeze(np.nonzero(beta)),:]
+    est_w = beta[np.nonzero(beta)]
+    o = rank_simple(-est_w)
+    est_w = est_w[o]
+    est_pos = est_pos[o,:]
+    yh = np.dot(xs,beta).reshape(-1,1)
+    return yh, beta, est_pos, est_w
+
+def sym_emd(true_pos, true_w, est_pos,est_w)
+    d1 = spd.cdist(true_pos,est_pos)
+    d2 = spd.cdist(true_pos,-est_pos)
+    dm = np.minimum(d1,d2)
 
 

@@ -3,7 +3,7 @@ import scipy as sp
 import scipy.optimize as spo
 import donuts.deconv.utils as du
 import numpy.testing as npt
-
+import scipy.spatial.distance as spd
 
 import dipy.data as dpd
 s1 = dpd.get_sphere('symmetric362')
@@ -28,8 +28,11 @@ def test_simulate_signal_kappa():
     kappa=1.5
     xs = du.ste_tan_kappa(np.sqrt(kappa)*grid,bvecs)
     beta = spo.nnls(xs,np.squeeze(y0))[0]
-    est_pos = grid[np.nonzero(beta),:]
+    est_pos = grid[np.squeeze(np.nonzero(beta)),:]
     est_w = beta[np.nonzero(beta)]
+    d1 = spd.cdist(true_pos,est_pos) 
+    d2 = spd.cdist(true_pos,-est_pos) 
+    
 
 
 
