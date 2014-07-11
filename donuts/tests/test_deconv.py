@@ -34,3 +34,9 @@ def test_simulate_signal_kappa():
     est_w = beta[np.nonzero(beta)]
     ee = du.sym_emd(true_pos,true_w,est_pos,est_w)
     npt.assert_almost_equal(ee,0)
+
+def test_random_ortho():
+    u = du.rand_ortho(3);
+    npt.assert_almost_equal(np.dot(u,u.T),np.eye(3))
+
+
