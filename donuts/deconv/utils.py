@@ -1,6 +1,9 @@
 import numpy as np
 import scipy as sp
 import scipy.optimize as spo
+import scipy.spatial.distance as dist
+import donuts.emd as emd
+
 
 def rank_simple(vector):
     return sorted(range(len(vector)), key=vector.__getitem__)
@@ -159,9 +162,13 @@ def ls_est(y,xs,grid):
     yh = np.dot(xs,beta).reshape(-1,1)
     return yh, beta, est_pos, est_w
 
-#def sym_emd(true_pos, true_w, est_pos,est_w)
-#    d1 = spd.cdist(true_pos,est_pos)
-#    d2 = spd.cdist(true_pos,-est_pos)
-#    dm = np.minimum(d1,d2)
+def sym_emd(true_pos, true_w, est_pos,est_w):
+    true_w = true_w/sum(true_w)
+    est_w = est_w/sum(est_w)
+    d1 = dist.cdist(true_pos,est_pos)
+    d2 = dist.cdist(true_pos,-est_pos)
+    dm = np.minimum(d1,d2).ravel()
+    ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
+    return ee
 
 
