@@ -14,3 +14,5 @@ true_sigma = 0.1
 y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
 
 
+
+
