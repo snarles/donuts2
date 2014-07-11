@@ -154,7 +154,7 @@ def ls_est(y,xs,grid):
     est_w : ? x 1 numpy array, the nonnegative entries of beta in descending order
     est_pos : ? x 3 numpy array, the points in grid corresponding to est_w
     """
-    beta = spo.nnls(xs,np.squeeze(y0))[0]
+    beta = spo.nnls(xs,np.squeeze(y))[0]
     est_pos = grid[np.squeeze(np.nonzero(beta)),:]
     est_w = beta[np.nonzero(beta)]
     o = rank_simple(-est_w)
