@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.linalg as nla
 import scipy as sp
 import scipy.optimize as spo
 import scipy.spatial.distance as dist
@@ -153,7 +154,7 @@ def ls_est(y,xs,grid):
     est_w : ? x 1 numpy array, the nonnegative entries of beta in descending order
     est_pos : ? x 3 numpy array, the points in grid corresponding to est_w
     """
-    beta = spo.nnls(xs,np.squeeze(y0))[0]
+    beta = spo.nnls(xs,np.squeeze(y))[0]
     est_pos = grid[np.squeeze(np.nonzero(beta)),:]
     est_w = beta[np.nonzero(beta)]
     o = rank_simple(-est_w)
@@ -163,6 +164,21 @@ def ls_est(y,xs,grid):
     return yh, beta, est_pos, est_w
 
 def sym_emd(true_pos, true_w, est_pos,est_w):
+    """ Computes the EMD between two kappa-weighted FODFS
+
+    Parameters
+    ----------
+    true_pos : K1 x 3 numpy array, ground truth set of directions,
+               where each direction is weighted by the square root of its estimated kappa
+    true_w   : K1 x 1 numpy array, weights of each fiber.  These will be normalized automatically to sum to 1
+    est_pos  : K2 x 3 numpy array, estimated set of directions,
+               where each direction is weighted by the square root of its estimated kappa
+    est_w    : K1 x 1 numpy array, estimated weights of each fiber.  These will be normalized to sum to 1
+    
+    Outputs
+    -------
+    ee       : Earthmover distance, a number from 0 to 4
+    """
     true_w = true_w/sum(true_w)
     est_w = est_w/sum(est_w)
     d1 = dist.cdist(true_pos,est_pos)
@@ -170,5 +186,12 @@ def sym_emd(true_pos, true_w, est_pos,est_w):
     dm = np.minimum(d1,d2).ravel()
     ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
     return ee
+
+def rand_ortho(k):
+    # returns a random orthogonal matrix of size k x k
+    a = np.random.normal(0,1,(k,k))
+    u, s, v = nla.svd(a)
+    return u
+
 
 
