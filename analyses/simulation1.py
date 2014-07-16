@@ -13,6 +13,13 @@ true_kappa = 1.5
 true_sigma = 0.1
 y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
 
-
-
-
+kappas = np.arange(0.5,2,.1)
+xss = [0]*len(kappas)
+for i in range(len(kappas)):
+    kappa = kappas[i]
+    xss[i] = du.ste_tan_kappa(np.sqrt(kappa)*grid,bvecs)
+cves = [0.]*len(kappas)
+for i in range(len(kappas)):
+    kappa = kappas[i]
+    cves[i] = sum(du.cv_nnls(y1,xss[i],5))
+sel_kappa = kappas[du.rank_simple(cves)[0]]
