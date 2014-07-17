@@ -27,8 +27,11 @@ sel_kappa = kappas[du.rank_simple(cves)[0]]
 
 
 import donuts.data as dnd
-data, bvecs, bvals = dnd.load_hcp_cso()
-bvecs=bvecs.T
+data, bvecs0, bvals = dnd.load_hcp_cso()
+bvecs0=bvecs0.T
+idx = np.squeeze(np.nonzero(np.logical_and(bvals > 980, bvals < 1020)))
+
+
 y = data[2,3,0,:]
 kappas = np.arange(.5,4,.1)
 xss = [0]*len(kappas)
