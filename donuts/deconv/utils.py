@@ -194,4 +194,46 @@ def rand_ortho(k):
     return u
 
 
+def build_xss(grid,bvecs,kappas):
+    """ Generates a list of Steksjal-Tanner signal design matrices
+        for kappa in kappas
+    
+    Parameters
+    ----------
+    grid: M x 3 numpy array of unit vector fiber directions
+    bvecs: N x 3 numpy array of unit vectors
+      corresponding to DWI measurement directions
+    kappas: K-length list of kappas
 
+    Returns
+    -------
+    xss : K-length list
+      xss[i] : N x M numpy array, columns are ST kernel signals
+    """
+    xss = [0]*len(kappas)
+    for i in range(len(kappas)):
+        kappa = kappas[i]
+        xss[i] = ste_tan_kappa(sqrt(kappa)*grid, bvecs)
+    return xss
+
+def cv_sel_params(y,xss,k_folds,params):
+    """ Selects model parameters for a single observation using cross-validation
+
+    Parameters
+    ----------
+    y : n x 1 numpy array, signal
+    xss : K-length list of n x p numpy array, design matrix
+    k_folds : number of cross-validation folds
+    params : K-length list of parameters corresponding to xss
+    
+    Outputs
+    -------
+    sel_param: param corresponding to lowest cv error
+    cves : K-length list of cv error for each xss
+    """
+    K = len(kappas)
+    cves = [0.]*K
+    for i in range(K):
+        cves[i] = sum(cv_nnls(y,xss[i],k_folds))
+    sel_param = params[rank_simple(cves)[0]]
+    return sel_param, cves
