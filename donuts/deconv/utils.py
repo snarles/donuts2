@@ -213,7 +213,7 @@ def build_xss(grid,bvecs,kappas):
     xss = [0]*len(kappas)
     for i in range(len(kappas)):
         kappa = kappas[i]
-        xss[i] = ste_tan_kappa(sqrt(kappa)*grid, bvecs)
+        xss[i] = ste_tan_kappa(np.sqrt(kappa)*grid, bvecs)
     return xss
 
 def cv_sel_params(y,xss,k_folds,params):
@@ -231,7 +231,7 @@ def cv_sel_params(y,xss,k_folds,params):
     sel_param: param corresponding to lowest cv error
     cves : K-length list of cv error for each xss
     """
-    K = len(kappas)
+    K = len(params)
     cves = [0.]*K
     for i in range(K):
         cves[i] = sum(cv_nnls(y,xss[i],k_folds))
