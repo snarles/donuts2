@@ -22,14 +22,26 @@ for ii in range(nits):
     true_k = 3
     true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
     true_w = np.ones((true_k,1))/true_k
-    true_kappa = 2
-    true_sigma = 0.1
+    true_kappa = 1.5
+    true_sigma = 0.2
     y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
     sel_kappa, cves = du.cv_sel_params(y1,xss,10,kappas)
     all_cves[:,ii] = cves
-
 sum_cves = np.sum(all_cves,axis=1)
 sel_kappa = kappas[du.rank_simple(sum_cves)[0]]
+sel_xs = xss[du.rank_simple(sum_cves)[0]]
+tsses=[0.]*nits
+sses = [0.]*nits
+for ii in range(nits):
+    true_k = 3
+    true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
+    true_w = np.ones((true_k,1))/true_k
+    y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
+    yh, beta, est_pos, est_w = du.ls_est(y1,sel_xs,grid)
+    sses[ii] = sum((yh-y1)**2)
+    tsses[ii]=sum((y1-y0)**2)
+tsigma_h = np.sqrt(np.mean(tsses)/n)
+sigma_h = np.sqrt(np.mean(sses)/n)
 
 # real data
 
