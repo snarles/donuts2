@@ -5,7 +5,7 @@ import donuts.data as dnd
 s1 = dpd.get_sphere('symmetric362')
 s2 = s1.subdivide() # s2 has 1442 vertices
 grid = s2.vertices
-kappas = np.arange(0.5,4,.1)
+kappas = np.arange(0.8,3,.05)
 
 data, bvecs0, bvals = dnd.load_hcp_cso()
 bvecs0=bvecs0.T
@@ -16,10 +16,10 @@ xss = du.build_xss(grid,bvecs,kappas)
 n= np.shape(bvecs)[0]
 
 # simulation
-nits = 25
-all_cves = np.zeros((len(kappas),nits))
+nits = 100
+all_cves= np.zeros((len(kappas),nits))
 for ii in range(nits):
-    true_k = 3
+    true_k = 2
     true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
     true_w = np.ones((true_k,1))/true_k
     true_kappa = 1.1
