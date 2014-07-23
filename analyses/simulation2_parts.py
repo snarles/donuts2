@@ -45,6 +45,7 @@ nvox = len(sel_inds)
 nits = 100
 inds = range((partarg-1)*nits,min(nvox,partarg*nits))
 all_cves = np.zeros((len(kappas),nits))
+partarg = partarg+1
 for ii in range(nits):
     true_k = 3
     true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
@@ -55,5 +56,4 @@ for ii in range(nits):
     sel_kappa, cves = du.cv_sel_params(y1,xss,20,kappas)
     all_cves[:,ii] = cves
 strname = "synth_output_b"+str(barg)+"_part_"+str(partarg)+".npy"
-
 np.save(strname,all_cves)
