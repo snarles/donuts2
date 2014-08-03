@@ -65,7 +65,7 @@ for jj in range(5):
     for ii in range(nits):
         true_k = 3
         true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
-        true_w = np.array([0.8,0.1,0.1])
+        true_w = np.array([1.,0.,0.])
         true_kappa = 2.0
         true_sigma = 0.1
         y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
