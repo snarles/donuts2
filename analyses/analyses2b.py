@@ -17,9 +17,11 @@ idx = np.squeeze(np.nonzero(np.logical_and(bvals > bval-20, bvals < bval+20)))
 bvecs = bvecs0[idx,:]
 xss = du.build_xss(grid,bvecs,kappas)
 n= np.shape(bvecs)[0]
-all_cvess = [0]*16
+nfi = 9
 
-for partarg in range(0,16):
+all_cvess = [0]*nfi
+
+for partarg in range(0,nfi):
     strname = "synth_output_b"+str(barg)+"_part_"+str(partarg)+".npy"
     all_cvess[partarg-1] = np.load(strname)
 all_cves = np.hstack(all_cvess)
