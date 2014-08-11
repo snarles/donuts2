@@ -9,7 +9,7 @@ kappas = np.arange(0.8,3,.05)
 
 data, bvecs0, bvals = dnd.load_hcp_cso()
 bvecs0=bvecs0.T
-bval = 1000
+bval = 2000
 barg = bval
 idx = np.squeeze(np.nonzero(np.logical_and(bvals > bval-20, bvals < bval+20)))
 bvecs = bvecs0[idx,:]

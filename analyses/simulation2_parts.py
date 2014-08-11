@@ -39,6 +39,7 @@ np.save(strname,all_cves)
 
     
 # synthetic data
+
 barg=2000
 import numpy as np
 import donuts.data as dnd
@@ -55,21 +56,24 @@ idx = np.squeeze(np.nonzero(np.logical_and(bvals > bval-20, bvals < bval+20)))
 bvecs = bvecs0[idx,:]
 xss = du.build_xss(grid,bvecs,kappas)
 n= np.shape(bvecs)[0]
+
+
+
 sel_inds = du.fullfact([40,40])
 nvox = len(sel_inds)
 nits = 100
 inds = range((partarg-1)*nits,min(nvox,partarg*nits))
 all_cves = np.zeros((len(kappas),nits))
-for jj in range(5):
-    partarg = partarg+1
-    for ii in range(nits):
-        true_k = 3
-        true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
-        true_w = np.array([1.,0.,0.])
-        true_kappa = 2.0
-        true_sigma = 0.1
-        y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
-        sel_kappa, cves = du.cv_sel_params(y1,xss,20,kappas)
-        all_cves[:,ii] = cves
-    strname = "synth_output_b"+str(barg)+"_part_"+str(partarg)+".npy"
-    np.save(strname,all_cves)
+partarg = partarg+1
+for ii in range(nits):
+    true_k = 3
+    true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
+    true_w = np.array([0.8,0.1,0.1])
+    true_kappa = 1.6
+    true_sigma = 0.1
+    y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
+    sel_kappa, cves = du.cv_sel_params(y1,xss,20,kappas)
+    all_cves[:,ii] = cves
+strname = "synth_output_b"+str(barg)+"_part_"+str(partarg)+".npy"
+np.save(strname,all_cves)
+
