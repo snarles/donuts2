@@ -7,7 +7,8 @@ s2 = s1.subdivide() # s2 has 1442 vertices
 grid = s2.vertices
 kappas = np.arange(0.8,3,.05)
 
-data, bvecs0, bvals = dnd.load_hcp_cso()
+#data, bvecs0, bvals = dnd.load_hcp_cso()
+data, bvecs0, bvals = dnd.load_hcp_cc()
 bvecs0=bvecs0.T
 bval = 2000
 idx = np.squeeze(np.nonzero(np.logical_and(bvals > bval-20, bvals < bval+20)))
