@@ -250,3 +250,40 @@ def cv_sel_params(y,xss,k_folds,params):
         cves[j] = sum(cve)
     sel_param = params[rank_simple(cves)[0]]
     return sel_param, cves
+
+
+def cv_sel_params_center(y,xss,k_folds,params):
+    """ Selects model parameters for a single observation using cross-validation using mean-centering
+
+    Parameters
+    ----------
+    y : n x 1 numpy array, signal
+    xss : K-length list of n x p numpy array, design matrix
+    k_folds : number of cross-validation folds
+    params : K-length list of parameters corresponding to xss
+    
+    Outputs
+    -------
+    sel_param: param corresponding to lowest cv error
+    cves : K-length list of cv error for each xss
+    """
+    K = len(params)
+    cves = [0.]*K
+    n = len(y)
+    rp = np.random.permutation(n)/float(n)
+    for j in range(K):
+        xs = xss[j]
+        cve = np.zeros(k_folds)
+        for i in range(k_folds):
+            filt_te = np.logical_and(rp >= (float(i)/k_folds), rp < ((float(i)+1)/k_folds))
+            y_tr = y[np.nonzero(np.logical_not(filt_te))]
+            mu = np.mean(y.tr)
+            y_te = y[np.nonzero(filt_te)]
+            xs_tr = xs[np.nonzero(np.logical_not(filt_te))]
+            xs_te = xs[np.nonzero(filt_te)]
+            beta = spo.nnls(xs_tr - mu,np.squeeze(y_tr-mu))[0]
+            yh = np.dot(xs_te, beta) + mu
+            cve[i] = sum((yh - np.squeeze(y_te))**2)
+        cves[j] = sum(cve)
+    sel_param = params[rank_simple(cves)[0]]
+    return sel_param, cves
