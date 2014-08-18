@@ -34,7 +34,7 @@ xss_1 = [np.hstack([np.ones((n,1)),xs]) for xs in xss]
 # real data
 
 nvox = np.shape(data)[0]
-nits = 10
+nits = 100
 lrange = (partarg-1)*nits
 urange = min(partarg*nits,nvox)
 iis = range(lrange,urange)
