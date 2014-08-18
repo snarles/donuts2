@@ -64,6 +64,6 @@ for ii in iis:
     if printarg==1:
         print strname+" "+str(ii)
     y1 = data[ii,idx]
-    sel_kappa, cves = cv_sel_params_center(y1,xss,n,kappas)
+    sel_kappa, cves = du.cv_sel_params_center(y1,xss,n,kappas)
     all_cves[:,ii-lrange] = cves    
 np.save(strname,all_cves)
