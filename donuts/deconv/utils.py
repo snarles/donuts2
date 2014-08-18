@@ -273,15 +273,16 @@ def cv_sel_params_center(y,xss,k_folds,params):
     rp = np.random.permutation(n)/float(n)
     for j in range(K):
         xs = xss[j]
+        xs = np.array([xx - np.mean(xx) for xx in xs])
         cve = np.zeros(k_folds)
         for i in range(k_folds):
             filt_te = np.logical_and(rp >= (float(i)/k_folds), rp < ((float(i)+1)/k_folds))
             y_tr = y[np.nonzero(np.logical_not(filt_te))]
-            mu = np.mean(y.tr)
+            mu = np.mean(y_tr)
             y_te = y[np.nonzero(filt_te)]
             xs_tr = xs[np.nonzero(np.logical_not(filt_te))]
             xs_te = xs[np.nonzero(filt_te)]
-            beta = spo.nnls(xs_tr - mu,np.squeeze(y_tr-mu))[0]
+            beta = spo.nnls(xs_tr,np.squeeze(y_tr-mu))[0]
             yh = np.dot(xs_te, beta) + mu
             cve[i] = sum((yh - np.squeeze(y_te))**2)
         cves[j] = sum(cve)

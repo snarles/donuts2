@@ -2,27 +2,6 @@
 # carries out CV kappa selection on subset of data
 
 
-def cv_sel_params_center(y,xss,k_folds,params):
-    K = len(params)
-    cves = [0.]*K
-    n = len(y)
-    rp = np.random.permutation(n)/float(n)
-    for j in range(K):
-        xs = xss[j]
-        cve = np.zeros(k_folds)
-        for i in range(k_folds):
-            filt_te = np.logical_and(rp >= (float(i)/k_folds), rp < ((float(i)+1)/k_folds))
-            y_tr = y[np.nonzero(np.logical_not(filt_te))]
-            mu = np.mean(y.tr)
-            y_te = y[np.nonzero(filt_te)]
-            xs_tr = xs[np.nonzero(np.logical_not(filt_te))]
-            xs_te = xs[np.nonzero(filt_te)]
-            beta = spo.nnls(xs_tr - mu,np.squeeze(y_tr-mu))[0]
-            yh = np.dot(xs_te, beta) + mu
-            cve[i] = sum((yh - np.squeeze(y_te))**2)
-        cves[j] = sum(cve)
-    sel_param = params[rank_simple(cves)[0]]
-    return sel_param, cves
 
 
 import sys
@@ -47,9 +26,8 @@ bval = barg
 idx = np.squeeze(np.nonzero(np.logical_and(bvals > bval-20, bvals < bval+20)))
 bvecs = bvecs0[idx,:]
 xss = du.build_xss(grid,bvecs,kappas)
-xss_1 = [np.hstack([np.ones((n,1)),xs]) for xs in xss]
 n= np.shape(bvecs)[0]
-
+xss_1 = [np.hstack([np.ones((n,1)),xs]) for xs in xss]
 
 
     
