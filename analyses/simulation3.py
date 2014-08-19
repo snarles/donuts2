@@ -69,32 +69,43 @@ def bsel_gen_test(true_k, scale_p, true_kappa, true_sigma, grid, bvecs, sel_xs):
     true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
     true_w = np.random.dirichlet([scale_p]*true_k,1).T
     errs,min_sses,spars,sumbs = bsel_test(true_kappa,true_pos,true_w,bvecs,true_sigma,sel_xs,grid)
-    return errs, min_sses,spars,sumbs
+    return errs, min_sses,spars,sumbs,true_pos,true_w
 
 def no_bksel(otpts):
     errs = [otpt[0,0] for otpt in otpts]
-    return np.mean(errs)
+    spars=[otpt[0,2] for otpt in otpts]
+    return np.mean(errs),np.mean(spars)
 
 def thres_bksel(otpts,thres):
     errs = [0.]*len(otpts)
+    spars = [0.]*len(otpts)
     for ii in range(len(otpts)):
         otpt = otpts[ii]
+        indd=0
         errs[ii] = otpt[0,0]
         sses = otpt[:,1]
         sse_diff = sses[1:]-sses[:-1]
         ll=np.nonzero(sse_diff > thres)[0]
         if len(ll) > 0:
            indd = ll[0]
-           errs[ii] = otpt[indd,0]
-    return np.mean(errs)
+        errs[ii] = otpt[indd,0]
+        spars[ii] = otpt[indd,2]
+    return np.mean(errs),np.mean(spars)
 
+def thres_bksel_m(otpts, thress):
+    for thres in thress:
+        me,ms = thres_bksel(otpts,thres)
+        print (me,ms)
 
-
-nits = 100
-otpts = [0]*nits
-sel_xs = du.ste_tan_kappa(np.sqrt(true_kappa)*grid, bvecs)
-for ii in range(nits):
-    errs,min_sses,spars,sumbs = bsel_gen_test(true_k,scale_p,true_kappa,true_sigma,grid,bvecs,sel_xs)
-    otpts[ii] = np.array(zip(errs,min_sses,spars,sumbs))
-
+def gen_otpts(true_k,scale_p,true_kappa,true_sigma,nits):
+    otpts = [0]*nits
+    true_poss = [0]*nits
+    true_ws = [0]*nits
+    sel_xs = du.ste_tan_kappa(np.sqrt(true_kappa)*grid, bvecs)
+    for ii in range(nits):
+        errs,min_sses,spars,sumbs,true_pos,true_w = bsel_gen_test(true_k,scale_p,true_kappa,true_sigma,grid,bvecs,sel_xs)
+        true_poss[ii] = true_pos
+        true_ws[ii] = true_w
+        otpts[ii] = np.array(zip(errs,min_sses,spars,sumbs))
+    return otpts
 
