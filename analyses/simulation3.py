@@ -92,6 +92,20 @@ def thres_bksel(otpts,thres):
         spars[ii] = otpt[indd,2]
     return np.mean(errs),np.mean(spars)
 
+def fix_bksel(otpts,fixspar):
+    errs = [0.]*len(otpts)
+    spars = [0.]*len(otpts)
+    for ii in range(len(otpts)):
+        otpt = otpts[ii]
+        indd=0
+        if np.shape(otpt)[0] > fixspar:
+            indd = np.shape(otpt)[0]-fixspar
+        errs[ii] = otpt[indd,0]
+        spars[ii] = otpt[indd,2]
+    return np.mean(errs),np.mean(spars)
+
+
+
 def thres_bksel_m(otpts, thress):
     for thres in thress:
         me,ms = thres_bksel(otpts,thres)
@@ -106,6 +120,6 @@ def gen_otpts(true_k,scale_p,true_kappa,true_sigma,nits):
         errs,min_sses,spars,sumbs,true_pos,true_w = bsel_gen_test(true_k,scale_p,true_kappa,true_sigma,grid,bvecs,sel_xs)
         true_poss[ii] = true_pos
         true_ws[ii] = true_w
-        otpts[ii] = np.array(zip(errs,min_sses,spars,sumbs))
+        otpts[ii] = np.array(zip(errs,np.sqrt(min_sses/n),spars,sumbs))
     return otpts
 
