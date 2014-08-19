@@ -95,7 +95,7 @@ def thres_bksel(otpts,thres):
 def thres_bksel_m(otpts, thress):
     for thres in thress:
         me,ms = thres_bksel(otpts,thres)
-        print (me,ms)
+        print (thres, me,ms)
 
 def gen_otpts(true_k,scale_p,true_kappa,true_sigma,nits):
     otpts = [0]*nits
