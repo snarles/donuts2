@@ -3,12 +3,13 @@
 import sys
 bval = int(sys.argv[1])
 true_k = int(sys.argv[2])
-true_kappa = float(sys.argv[3])
-true_sigma = float(sys.argv[4])
-partarg = int(sys.argv[5])
+scale_p = int(sys.argv[3])
+true_kappa = float(sys.argv[4])
+true_sigma = float(sys.argv[5])
+partarg = int(sys.argv[6])
 
 
-strname = "sim3_b"+sys.argv[1]+"_k"+sys.argv[2]+"_kp"+sys.argv[3]+"_sg"+sys.argv[4]+"_"+sys.argv[5]
+strname = "sim3_b"+sys.argv[1]+"_k"+sys.argv[2]+"_s"+sys.argv[3]+"_kp"+sys.argv[4]+"_sg"+sys.argv[5]+"_"+sys.argv[6]
 print strname
 
 
@@ -64,18 +65,36 @@ def bsel_test(true_kappa, true_pos, true_w, bvecs, true_sigma, sel_xs, grid):
     spars = [len(v) for v in active_sets]
     return errs, min_sses, spars,sumbs
 
-def bsel_gen_test(true_k, true_kappa, true_sigma, grid, bvecs, sel_xs):
+def bsel_gen_test(true_k, scale_p, true_kappa, true_sigma, grid, bvecs, sel_xs):
     true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
-    true_w = np.random.dirichlet([1]*true_k,1).T
+    true_w = np.random.dirichlet([scale_p]*true_k,1).T
     errs,min_sses,spars,sumbs = bsel_test(true_kappa,true_pos,true_w,bvecs,true_sigma,sel_xs,grid)
     return errs, min_sses,spars,sumbs
+
+def no_bksel(otpts):
+    errs = [otpt[0,0] for otpt in otpts]
+    return np.mean(errs)
+
+def thres_bksel(otpts,thres):
+    errs = [0.]*len(otpts)
+    for ii in range(len(otpts)):
+        otpt = otpts[ii]
+        errs[ii] = otpt[0,0]
+        sses = otpt[:,1]
+        sse_diff = sses[1:]-sses[:-1]
+        ll=np.nonzero(sse_diff > thres)[0]
+        if len(ll) > 0:
+           indd = ll[0]
+           errs[ii] = otpt[indd,0]
+    return np.mean(errs)
+
 
 
 nits = 100
 otpts = [0]*nits
 sel_xs = du.ste_tan_kappa(np.sqrt(true_kappa)*grid, bvecs)
 for ii in range(nits):
-    errs,min_sses,spars,sumbs = bsel_gen_test(true_k,true_kappa,true_sigma,grid,bvecs,sel_xs)
-    otpts[ii] = np.array(zip([ii]*len(errs),errs,min_sses,spars,sumbs))
+    errs,min_sses,spars,sumbs = bsel_gen_test(true_k,scale_p,true_kappa,true_sigma,grid,bvecs,sel_xs)
+    otpts[ii] = np.array(zip(errs,min_sses,spars,sumbs))
 
 
