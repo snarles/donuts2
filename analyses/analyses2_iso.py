@@ -20,6 +20,7 @@ all_cvess = [0]*16
 
 strheads = ["s3iso_1","s2iso_2","s3iso_3"]
 min_mins = [0]*3
+sel_kappas = [0]*3
 
 for vn in range(1,4):
     for partarg in range(1,17):
@@ -30,6 +31,9 @@ for vn in range(1,4):
     sel_kappa = kappas[du.rank_simple(sum_cves)[0]]
     sel_xs = xss[du.rank_simple(sum_cves)[0]]
     min_mins[vn-1] = min(sum_cves)
+    sel_kappas[vn-1]=sel_kappa
+
+
 
     nvox = np.shape(data)[0]
     sses = [0.]*nvox

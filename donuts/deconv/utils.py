@@ -273,7 +273,7 @@ def cv_sel_params_center(y,xss,k_folds,params):
     rp = np.random.permutation(n)/float(n)
     for j in range(K):
         xs = xss[j]
-        xs = np.array([xx - np.mean(xx) for xx in xs])
+        xs = np.array([xx - np.mean(xx) for xx in xs.T]).T
         cve = np.zeros(k_folds)
         for i in range(k_folds):
             filt_te = np.logical_and(rp >= (float(i)/k_folds), rp < ((float(i)+1)/k_folds))
