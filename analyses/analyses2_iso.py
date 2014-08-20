@@ -23,7 +23,7 @@ min_mins = [0]*3
 
 for vn in range(1,4):
     for partarg in range(1,17):
-        strname = strheads[vn]+"_output_b"+str(barg)+"_part_"+str(partarg)+".npy"
+        strname = strheads[vn-1]+"_output_b"+str(barg)+"_part_"+str(partarg)+".npy"
         all_cvess[partarg-1] = np.load(strname)
     all_cves = np.hstack(all_cvess)
     sum_cves = np.sum(all_cves,axis=1)
