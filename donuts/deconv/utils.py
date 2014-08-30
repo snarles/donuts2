@@ -163,6 +163,11 @@ def ls_est(y,xs,grid):
     yh = np.dot(xs,beta).reshape(-1,1)
     return yh, beta, est_pos, est_w
 
+def lasso_est(y,xs,grid,l1p):
+    yh, beta, est_pos, est_w = ls_est(np.vstack([y,0]),np.vstack([xs,l1p*np.ones((1,np.shape(xs)[1]))]),grid)
+    yh = yh[:-1,]
+    return yh, beta, est_pos, est_w
+
 def sym_emd(true_pos, true_w, est_pos,est_w):
     """ Computes the EMD between two kappa-weighted FODFS
 
