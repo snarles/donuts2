@@ -23,12 +23,13 @@ grid[:,1] = grid[:,1]+.01
 # true positions
 true_pos = np.vstack([[.1,.05],[.3,.05],[.7,.2]])
 true_w = np.reshape([.1,.2,.1],(-1,1))
-true_sigma = 0.1
+true_sigma = 0.001
 
 # generate the true signal
 
 x = heavisides(true_pos,bvecs)                                                                                             
 mu = np.dot(x,true_w)
-y = mu + np.random.normal(0,1,np.shape(mu))
+y = mu + true_sigma*np.random.normal(0,1,np.shape(mu))
 xx = heavisides(grid,bvecs)
-yh, beta, est_pos, est_w = du.lasso_est(y,xx,grid,0.)
+yh, beta, est_pos, est_w = du.lasso_est(y,xx,grid,0.01)
+ee = du.sym_emd(true_pos,true_w,est_pos,est_w)
