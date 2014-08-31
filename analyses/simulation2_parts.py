@@ -9,6 +9,7 @@ import numpy as np
 import donuts.data as dnd
 import donuts.deconv.utils as du
 import dipy.data as dpd
+pathname = "/biac4/wandell/data/snarles/"
 strname = "output_b"+str(barg)+"_part_"+str(partarg)+".npy"
 
 s1 = dpd.get_sphere('symmetric362')
@@ -38,7 +39,7 @@ for ii in range(nits):
     sel_kappa, cves = du.cv_sel_params(y1,xss,n,kappas)
     all_cves[:,ii] = cves
 
-np.save(strname,all_cves)
+np.save(pathname+strname,all_cves)
 
     
 
