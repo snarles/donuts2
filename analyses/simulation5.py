@@ -18,9 +18,10 @@ xs = du.ste_tan_kappa(grid, bvecs)
 
 # simulation
 true_k = 2
+true_kappa = 1.5
 true_pos = np.sqrt(true_kappa)*du.normalize_rows(np.random.normal(0,1,(true_k,3)))
 true_w = np.ones((true_k,1))/true_k
 true_kappa = 1.6
-true_sigma = 0.1
+true_sigma = 0.01
 y0, y1 = du.simulate_signal_kappa(true_pos,true_w,bvecs,true_sigma)
-yh, beta, est_pos, est_w = du.ls_est(y1,xs,grid)
+yh, beta, est_pos, est_w = du.lasso_est(y1,xs,grid,0.1)
