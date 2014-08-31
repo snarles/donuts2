@@ -36,7 +36,7 @@ for ii in range(nits):
     if printarg==1:
         print strname+" "+str(inds[ii])
     y1 = data[sel_inds[inds[ii]][0],sel_inds[inds[ii]][1],0,idx]
-    sel_kappa, cves = du.cv_sel_params(y1,xss,n,kappas)
+    sel_kappa, cves = du.cv_sel_params(y1,xss,20,kappas)
     all_cves[:,ii] = cves
 
 np.save(pathname+strname,all_cves)
