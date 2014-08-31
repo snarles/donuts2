@@ -12,18 +12,28 @@ import numpy as np
 import donuts.data as dnd
 import donuts.deconv.utils as du
 import dipy.data as dpd
+import time
 
-data, bvecs0, bvals = dnd.load_hcp_cso2()
-bvecs0=bvecs0.T
-np.save(datapath + 'bvecs',bvecs0)
-np.save(datapath + 'bvals',bvals)
-np.save(datapath + 'cso',data)
-data, bvecs0, bvals = dnd.load_hcp_cc()
-np.save(datapath + 'cc',data)
+today = time.strftime("%d-%m-%Y")
 
 f = open(datapath + 'index.txt','w')
-f.write('[INDEX][DATA:cso:raw][DATA:cc:raw]')
+f.write('INDEX\n')
 f.close()
 
+f = open(datapath + 'index.txt','a')
+
+for bval in [1000,2000,3000]:
+    data, bvecs0, bvals = dnd.load_hcp_cso2()
+    bvecs0=bvecs0.T
+    idx = np.squeeze(np.nonzero(np.logical_and(bvals > bval-20, bvals < bval+20)))
+    bvecs = bvecs0[idx,:]
+    np.save(datapath + 'bvecs'+str(bval),bvecs)
+    np.save(datapath + 'cso'+str(bval),data[:,idx])
+    f.write('name:cso'+str(bval)+' bvecs:bvecs'+str(bval)+' type:raw date:'+today+'\n')
+    data, bvecs0, bvals = dnd.load_hcp_cc()
+    np.save(datapath + 'cc'+str(bval),data[:,idx])
+    f.write('name:cc'+str(bval)+' bvecs:bvecs'+str(bval)+' type:raw date:'+today+'\n')
+
+f.close()
 
 
