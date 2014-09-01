@@ -23,7 +23,77 @@
 #  out_emds   -              - tells the script to output earthmover distance per kappa/l1p (synthetica data only)
 #  print      -              - tells the script to output the progress
 
+f = open('datapath.txt')
+datapath = f.read()
+f.close()
+
+
+import os.path
+import sys
+sa = sys.argv
+import numpy as np
+import donuts.data as dnd
+import donuts.deconv.utils as du
+import dipy.data as dpd
+import time
+today = time.strftime("%d-%m-%Y")
+
+# parameter ranges
+
+allowed_grid = [362,1442]
+
+# Default parameters
+name = ''
+multi_kappa = False
+grid_size = 362
+multi_reso = -1
+kfold = 20
+kappas = np.arange(1,2,.1)
+l1ps = -1
+out_cves = False
+out_emds = False
+print_opt = False
+
+# parse input arguments
+for ss in sa:
+    sss = ss.split(':')
+    if sss[0]=='name':
+        name = sss[1]
+    if sss[0]=='grid':
+        multi_kappa = False
+        xx = int(sss[1])
+        if xx in allowed_grid:
+            grid_size = xx
+        else:
+            print 'Grid size ' + sss[1]+' not allowed.'
+            print 'Choose from: '+','.join(allowed_grid)
+    if sss[0]=='multi_reso':
+
+
 # Checks to see if the job has already been queued: if so, it will increment the part
+
+cmdstring = ' '.join(sa)
+f = open('jobqueue.txt','a')
+f.close()
+f = open('jobqueue.txt','r')
+joblist = f.read().split('\n')
+f.close()
+joblist = [jj.split('|') for jj in joblist]
+
+# has this command been run?
+job_exist = False
+part =-1
+for jj in joblist:
+    if jj[0]==cmdstring:
+        job_exist = True
+        name = jj[1]
+        pt = int(jj[2])
+        part = max(part,pt)
+if not job_exist:
+    if name=='':
+    else:
+
+
 
 # Run the job
 
