@@ -31,6 +31,9 @@ sa = sys.argv
 f = open('datapath.txt')
 datapath = f.read()
 f.close()
+f = open(datapath + 'index.txt','r')
+index = f.read().split('\n')
+f.close()
 
 import os.path
 import numpy as np
@@ -97,8 +100,9 @@ for ss in sa:
 
 data = np.load(datapath + datafile + '.npy')
 
-
 # Look up the record in the index and get bvecs
+
+
 
 # Checks to see if the job has already been queued: if so, it will increment the part
 
@@ -124,9 +128,7 @@ if not job_exist:
     if name=='':
         # automatically generate the name
         counter = 0
-        f=open(datapath + 'index.txt','r')
         index = f.read().split('\n')
-        f.close()
         tokens = [ele.split(' ') for ele in index]
         for tok1 in tokens:
            for tok2 in tok1:
