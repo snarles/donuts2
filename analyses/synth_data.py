@@ -126,18 +126,28 @@ bvecs = np.load(datapath+'bvecs'+str(bval)+'.npy')
 nd = np.shape(bvecs)[0]
 print 'number of directions:'+str(nd)
 
+true_poss = np.zeros((true_k,3,n))
+true_ws = np.zeros((true_k,n))
+
 res = np.zeros((n,nd))
+res0 = np.zeros((n,nd))
 for ii in range(n):
     true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
     if multi_kappa:
         for i in range(true_k):
             true_pos[i,] = true_pos[i,]*np.random.uniform(1,2)
+    true_poss[:,:,ii] = true_pos
     else:
         true_pos = np.sqrt(true_kappa) * true_pos
     true_w = np.ones((true_k,1))/true_k
+    true_ws[:,ii] = true_w
     if weighting=='dirichlet':
         true_w =np.random.dirichlet(true_w).reshape((-1,1))
     y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
     res[ii,] = np.squeeze(y1)
+    res0[ii,] = np.squeeze(y0)
 
+np.save(datapath + name+'_pos',true_poss)
+np.save(datapath + name+'_w',true_ws)
+np.save(datapath + name+'_y0',res0)
 np.save(datapath + name, res)
