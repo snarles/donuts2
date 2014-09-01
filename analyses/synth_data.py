@@ -16,19 +16,23 @@
 #  scaling    - float        -  scale the data by this amount
 #  kappa      - float/str    - if 'multi', use multiple kappa, otherwise, set the kappa
 
+import sys
+sa = sys.argv
+
 f = open('datapath.txt')
 datapath = f.read()
 f.close()
+f = open(datapath + 'index.txt','r')
+index = f.read().split('\n')
+f.close()
 
-import sys
-sa = sys.argv
 import numpy as np
 import donuts.data as dnd
 import donuts.deconv.utils as du
+import donuts.deconv.navigator as dnv
 import dipy.data as dpd
 import time
 today = time.strftime("%d-%m-%Y")
-
 
 # default parameters
 name = ''
@@ -65,40 +69,16 @@ for cmd in sa:
         true_sigma = float(cmd[1])
 
 # automatically generate a name
-auto_name = False
-if name=='':
-    auto_name = True
-    f = open(datapath + 'index.txt','r')
-    txt = f.read().split('\n')
-    f.close()
-    simlist = []
-    for t in txt:
-        t = t.split(' ')
-        nom = ''
-        is_data = False
-        for t2 in t:
-            t3 = t2.split(':')
-            if t3[0]=='name':
-                nom = t3[1]
-            if t3[0]=='type':
-                if (t3[1]=='raw') or (t3[1]=='synth'):
-                    is_data = True
-        if is_data:
-            simlist = simlist + [nom]
-    counter = 0
-    for nom in simlist:
-        if nom[:9]=='synthdata':
-            no = int(nom.replace('synthdata',''))
-            counter = max(counter,no)
-    name = 'synthdata'+str(counter+1)
 
+if name=='':
+    name = dnv.autonamer(index,'name','synthdata')
 
 # print the parameter values
 print 'path:'+datapath+name+'.npy'
 print 'n:'+str(n)
 print 'bval:'+str(bval)
 print 'true_k:' + str(true_k)
-print 'true_sigma' + str(true_sigma)
+print 'true_sigma:' + str(true_sigma)
 if multi_kappa:
     print 'multi_kappa:True'
 else:
