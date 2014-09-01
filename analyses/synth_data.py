@@ -92,17 +92,6 @@ if name=='':
             counter = max(counter,no)
     name = 'synthdata'+str(counter+1)
 
-# write into the index
-desc_string = ''
-desc_string = desc_string + 'name:'+name+' bvals:bvals'+str(bval)
-desc_string = desc_string + ' type:synth'
-desc_string = desc_string + ' true_sigma:'+str(true_sigma)
-desc_string = desc_string + ' true_k:'+str(true_k)
-desc_string = desc_string + ' date:'+today+'\n'
-
-f = open(datapath+'index.txt','a')
-f.write(desc_string)
-f.close()
 
 # print the parameter values
 print 'path:'+datapath+name+'.npy'
@@ -151,3 +140,15 @@ np.save(datapath + name+'_pos',true_poss)
 np.save(datapath + name+'_w',true_ws)
 np.save(datapath + name+'_y0',res0)
 np.save(datapath + name, res)
+
+# write into the index
+desc_string = ''
+desc_string = desc_string + 'name:'+name+' bvals:bvals'+str(bval)
+desc_string = desc_string + ' type:synth'
+desc_string = desc_string + ' true_sigma:'+str(true_sigma)
+desc_string = desc_string + ' true_k:'+str(true_k)
+desc_string = desc_string + ' date:'+today+'\n'
+
+f = open(datapath+'index.txt','a')
+f.write(desc_string)
+f.close()
