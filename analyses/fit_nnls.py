@@ -31,6 +31,7 @@ sa = sys.argv
 f = open('datapath.txt')
 datapath = f.read()
 f.close()
+
 f = open(datapath + 'index.txt','r')
 index = f.read().split('\n')
 f.close()
@@ -39,8 +40,9 @@ import os.path
 import numpy as np
 import donuts.data as dnd
 import donuts.deconv.utils as du
-import dipy.data as dpd
+import donuts.deconv.navigator as dnv
 import time
+import math
 today = time.strftime("%d-%m-%Y")
 
 # parameter ranges
@@ -87,7 +89,7 @@ for ss in sa:
         ss2 = sss[1].replace('(','').replace(')','')
         kp = [float(ss3) for ss3 in ss2.split(',')]
         l1ps = np.arange(kp[0],kp[1],kp[2])
-    if sss[0] = 'nunits':
+    if sss[0] == 'nunits':
         nunits = int(sss[1])
     if sss[0]=='out_cves':
         out_cves = True
@@ -102,7 +104,10 @@ data = np.load(datapath + datafile + '.npy')
 
 # Look up the record in the index and get bvecs
 
-
+record = dnv.query(index, 'name', datafile)[0]
+bvecs = np.load(datapath + record['bvecs'] + '.npy')
+n = np.shape(data)[0]
+nparts = int(math.ceil(float(n)/nunits))
 
 # Checks to see if the job has already been queued: if so, it will increment the part
 
@@ -123,12 +128,13 @@ for jj in joblist:
         name = jj[1]
         pt = int(jj[2])
         part = max(part,pt)
+
+# now we know if the job exists; determine if the job needs to be run
 if not job_exist:
     part = 0
     if name=='':
         # automatically generate the name
         counter = 0
-        index = f.read().split('\n')
         tokens = [ele.split(' ') for ele in index]
         for tok1 in tokens:
            for tok2 in tok1:
@@ -143,6 +149,7 @@ if not job_exist:
 if job_exist:
     # determine the part number
     part = part+1
+
     print 'Continuing existing job: now part '+part
 
 # Run the job
