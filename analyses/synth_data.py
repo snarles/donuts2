@@ -85,20 +85,19 @@ if name=='':
                     is_data = True
         if is_data:
             simlist = simlist + [nom]
-print simlist
-counter = 0
-for nom in simlist:
-    if nom[:9]=='synthdata':
-        no = int(nom.replace('synthdata',''))
-        counter = max(counter,no)
-name = 'synthdata'+str(counter+1)
+    counter = 0
+    for nom in simlist:
+        if nom[:9]=='synthdata':
+            no = int(nom.replace('synthdata',''))
+            counter = max(counter,no)
+    name = 'synthdata'+str(counter+1)
 
 # write into the index
 desc_string = ''
 desc_string = desc_string + 'name:'+name+' bvals:bvals'+str(bval)
 desc_string = desc_string + ' type:synth'
 desc_string = desc_string + ' true_sigma:'+str(true_sigma)
-desc_string = desc_string + ' true_k'+str(true_k)
+desc_string = desc_string + ' true_k:'+str(true_k)
 desc_string = desc_string + ' date:'+today+'\n'
 
 f = open(datapath+'index.txt','a')
@@ -124,5 +123,21 @@ if true_k > 1:
 bvecs = np.load(datapath+'bvecs'+str(bval)+'.npy')
 
 # commence with the simulation
+nd = np.shape(bvecs)[0]
+print 'number of directions:'+str(nd)
 
-    
+res = np.zeros((n,nd))
+for ii in range(n):
+    true_pos = du.normalize_rows(np.random.normal(0,1,(true_k,3)))
+    if multi_kappa:
+        for i in range(true_k):
+            true_pos[i,] = true_pos[i,]*np.random.uniform(1,2)
+    else:
+        true_pos = np.sqrt(true_kappa) * true_pos
+    true_w = np.ones((true_k,1))/true_k
+    if weighting=='dirichlet':
+        true_w =np.random.dirichlet(true_w).reshape((-1,1))
+    y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true_sigma)
+    res[ii,] = np.squeeze(y1)
+
+np.save(datapath + name, res)
