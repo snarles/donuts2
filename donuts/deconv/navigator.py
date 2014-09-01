@@ -17,6 +17,13 @@ def is_number(s):
     except ValueError:
         return False
 
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 # util function, not directly called
 def query0(index,field,value,nameq):
     records = []
@@ -51,6 +58,19 @@ def query0(index,field,value,nameq):
 def query(index, field, value):
     return query0(index, field, value,False)
 
-# special query for autonaming
-def namequery(index,field,value):
-    return query0(index, field, value,True)
+# for naming files
+# eg you want to name a file 'Untitled0'
+# use the command
+#   name = autonamer(index, 'name', 'Untitled')
+# this will check if there is already a file called 'Untitled0'
+# if so, it will return the filename 'Untitled1'
+# 
+def autonamer(index,field,value):
+    matches = query0(index, field, value,True)
+    names = [m['name'] for m in matches]
+    counter = -1
+    for nom in names:
+        nom2 = nom[len(value):]
+        if is_int(nom2):
+            counter = max(counter,int(nom2))
+    return value+str(counter+1)
