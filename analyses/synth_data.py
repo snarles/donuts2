@@ -1,7 +1,7 @@
 # run setup_simulations.py first
 # run this file inside the directory
 
-
+# generates synthetic data using bvecs from real data
 
 # sample command:
 #  python synth_data.py b:1000 n:50 true_k:3 kappa:multi
@@ -136,9 +136,9 @@ for ii in range(n):
     if multi_kappa:
         for i in range(true_k):
             true_pos[i,] = true_pos[i,]*np.random.uniform(1,2)
-    true_poss[:,:,ii] = true_pos
     else:
         true_pos = np.sqrt(true_kappa) * true_pos
+    true_poss[:,:,ii] = true_pos
     true_w = np.ones((true_k,1))/true_k
     true_ws[:,ii] = true_w
     if weighting=='dirichlet':
