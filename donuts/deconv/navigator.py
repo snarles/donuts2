@@ -17,18 +17,23 @@ def is_number(s):
     except ValueError:
         return False
 
-# pass in index and return list of hashes
-def query(index,field,value):
+# util function, not directly called
+def query0(index,field,value,nameq):
     records = []
     for i in range(len(index)):
         entry = index[i]
         ss = entry.split(' ')
         for ss2 in ss:
             ss3 = ss2.split(':')
-            if ss3[0]=='field':
+            if ss3[0]==field:
                 if value != []:
-                    if ss3[1]==value:
+                    if nameq:
+                        if ss3[1][:len(value)]==value:
+                            records = records + [entry]
+                    elif ss3[1]==value:
                         records = records + [entry]
+                else:
+                    records = records + [entry]
     ans = []    
     for record in records:
         dc = {}
@@ -41,5 +46,11 @@ def query(index,field,value):
                 dc[ss3[0]]=ss3[1]
         ans = ans + [dc]
     return ans
-        
+
+# pass in index and return list of hashes
+def query(index, field, value):
+    return query0(index, field, value,False)
+
 # special query for autonaming
+def namequery(index,field,value):
+    return query0(index, field, value,True)
