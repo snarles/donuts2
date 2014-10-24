@@ -24,6 +24,11 @@ def is_int(s):
     except ValueError:
         return False
 
+# write raw data file format 1 to data directory
+# format 1: includes bvals, bvecs, datas
+def writeraw1(datapath,fname,bvals,bvecs,datas):
+
+
 # util function, not directly called
 def query0(index,field,value,nameq):
     records = []
