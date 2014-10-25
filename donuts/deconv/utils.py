@@ -97,6 +97,7 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma):
     weights: K x 1 numpy array of fiber weights
     bvecs: N x 3 numpy array of unit vectors
       corresponding to DWI measurement directions
+    sigma: noise level
     
     Returns
     -------
@@ -301,3 +302,44 @@ def cv_sel_params_center(y,xss,k_folds,params):
         cves[j] = sum(cve)
     sel_param = params[rank_simple(cves)[0]]
     return sel_param, cves
+
+def arcdist(xx,yy):
+    """ Computes pairwise arc-distance matrix
+
+    Parameters
+    ----------
+    xx : a x 3 numpy array
+    yy : b x 3 numpy array
+
+    Outputs
+    -------
+    dd: a x b numpy array
+    """
+    dd = np.arcsin(np.absolute(np.dot(xx,yy.T)))
+    dd = np.nan_to_num(dd)
+    return dd
+
+# generates k random unit vectors with minimum arc length gap
+def randvecsgap(k,gap):
+    if gap==0:
+        ans = np.random.randn(k,3)
+        ans = normalize_rows(ans)
+        return ans
+    ans = np.zeros((k,3))
+    flag = True
+    idxs = np.zeros(k,dtype=bool)
+    while sum(idxs) < k:
+        idx = np.random.randint(k)
+        idxs[idx] = False
+        v = np.random.normal(0,1,(1,3))
+        v = v/nla.norm(v)
+        if sum(idxs) > 0:
+            dd = arcdist(v, ans[idxs,:])
+            if np.amin(np.squeeze(dd)) > gap:
+                ans[idx,:] =  v
+                idxs[idx] = True
+        else:
+            ans[idx,:] =  v
+            idxs[idx] = True
+    return ans
+
