@@ -10,6 +10,9 @@
 #   index = f.read().split('\n')
 #   f.close()
 
+import os.path
+import numpy as np
+
 def is_number(s):
     try:
         float(s)
@@ -24,10 +27,21 @@ def is_int(s):
     except ValueError:
         return False
 
+def getindex(datapath):
+    if not os.path.isfile(datapath+'index.txt'):
+        f = open(datapath+'index.txt','w')
+        f.write('INDEX\n')
+        f.close()
+    f = open(datapath+'index.txt','a')
+    return f
+
 # write raw data file format 1 to data directory
 # format 1: includes bvals, bvecs, datas
 def writeraw1(datapath,fname,bvals,bvecs,datas):
-
+     f = getindex(datapath)
+     f.write('name:'+fname+'.npz format:'+'readraw1\n')
+     f.close()
+     np.savez(datapath+fname, bvals = bvals, bvecs = bvecs, datas = datas)
 
 # util function, not directly called
 def query0(index,field,value,nameq):
