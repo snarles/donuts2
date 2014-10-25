@@ -122,7 +122,7 @@ def cv_nnls(y,xs,k_folds):
     
     Outputs
     -------
-    cve : cv error for the k_folds folds
+    cve : sum of squares cv error for the k_folds folds
     """
     n = len(y)
     rp = np.random.permutation(n)/float(n)
@@ -133,7 +133,10 @@ def cv_nnls(y,xs,k_folds):
         y_te = y[np.nonzero(filt_te)]
         xs_tr = xs[np.nonzero(np.logical_not(filt_te))]
         xs_te = xs[np.nonzero(filt_te)]
-        beta = spo.nnls(xs_tr,np.squeeze(y_tr))[0]
+        if n < np.shape(xs)[0]:
+            beta = spo.nnls(np.vstack([xs_tr,xs[n+1,:]]),np.squeeze(np.vstack([y_tr,0])))[0]
+        else:
+            beta = spo.nnls(xs_tr,np.squeeze(y_tr))[0]
         yh = np.dot(xs_te, beta)
         cve[i] = sum((yh - np.squeeze(y_te))**2)
     return cve
@@ -144,7 +147,7 @@ def ls_est(y,xs,grid):
     Parameters
     ----------
     y : n x 1 numpy array, signal
-    xs : n x p numpy array, design matrix
+    xs : n (or n+1) x p numpy array, design matrix
     grid : p x 3 numpy array, candidate directions which were used to generate xs
     
     Outputs
@@ -154,13 +157,18 @@ def ls_est(y,xs,grid):
     est_w : ? x 1 numpy array, the nonnegative entries of beta in descending order
     est_pos : ? x 3 numpy array, the points in grid corresponding to est_w
     """
-    beta = spo.nnls(xs,np.squeeze(y))[0]
+    n = np.shape(y)[0]
+    if n < np.shape(xs)[0]:
+        beta = spo.nnls(xs,np.squeeze(np.vstack([y,0])))[0]
+        yh = np.dot(xs[0:n,:],beta).reshape(-1,1)
+    else:
+        beta = spo.nnls(xs,np.squeeze(y))[0]
+        yh = np.dot(xs,beta).reshape(-1,1)
     est_pos = grid[np.squeeze(np.nonzero(beta)),:]
     est_w = beta[np.nonzero(beta)]
     o = rank_simple(-est_w)
     est_w = est_w[o]
     est_pos = est_pos[o,:]
-    yh = np.dot(xs,beta).reshape(-1,1)
     return yh, beta, est_pos, est_w
 
 def lasso_est(y,xs,grid,l1p):
