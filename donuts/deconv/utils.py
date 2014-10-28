@@ -201,6 +201,30 @@ def sym_emd(true_pos, true_w, est_pos,est_w):
     ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
     return ee
 
+def arc_emd(true_pos,true_w,est_pos,est_w):
+    """ Computes the EMD between two unit length fODFS using arc-length distance
+
+    Parameters
+    ----------
+    true_pos : K1 x 3 numpy array, ground truth set of directions,
+               where each direction is weighted by the square root of its estimated kappa
+    true_w   : K1 x 1 numpy array, weights of each fiber.  These will be normalized automatically to sum to 1
+    est_pos  : K2 x 3 numpy array, estimated set of directions,
+               where each direction is weighted by the square root of its estimated kappa
+    est_w    : K1 x 1 numpy array, estimated weights of each fiber.  These will be normalized to sum to 1
+    
+    Outputs
+    -------
+    ee       : Earthmover distance, a number from 0 to pi/2
+    """
+    true_pos = normalize_rows(true_pos)
+    est_pos = normalize_rows(est_pos)
+    true_w = true_w/sum(true_w)
+    est_w = est_w/sum(est_w)
+    dm = arcdist(true_pos,est_pos).ravel()
+    ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
+    return ee
+
 def rand_ortho(k):
     # returns a random orthogonal matrix of size k x k
     a = np.random.normal(0,1,(k,k))
