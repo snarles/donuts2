@@ -27,3 +27,4 @@ err = du.arc_emd(true_pos,true_w,est_pos,est_w)
 yhs, betas, est_s, sses= du.bsel_nnls(y1, xs, grid)
 errs = [du.arc_emd(true_pos,true_w,v[1],v[0]) for v in est_s]
 est_pos2,est_w2 = du.peak_1(beta,grid,dm,0.1,0.05)
+err1 = du.arc_emd(true_pos,true_w,est_pos2,est_w2)

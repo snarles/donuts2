@@ -455,3 +455,29 @@ def peak_1(beta,grid,dm,gap,thres):
     est_w = est_w[range(count),:]
     est_w = est_w/sum(est_w)
     return est_pos, est_w
+
+def cap_sample(v,rad,res):
+    """ Supplies unit vectors which form a grid on a spherical cap
+
+    Parameters
+    ----------
+    v : 1 x 3 vector
+    rad: radius of cap, from 0 to 1 
+    res: resolution of cap, the number of points will be approx. pi * res^2
+
+    Outputs
+    -------
+    vs: ?x3 unit vectors forming a cap around v
+    """
+    a = np.identity(3)
+    a[:,0] = v[0,:]
+    q,r = np.linalg.qr(a)
+    kk = 2*res + 1
+    x = fullfact([kk,kk])/resolution - 1
+    nms = norms(x)
+    x = x[nms < 1,:]
+    x = x*rad
+    x = np.vstack([1+0*x[:,0:1],x])
+    x = normalize_rows(x)
+    vs = np.dot(x,q)
+    return vs
