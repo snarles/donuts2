@@ -388,7 +388,7 @@ def bsel_nnls(y, xs, grid):
     yh, beta, est_pos, est_w = ls_est(y,xs,grid)
     sparsity = len(np.nonzero(beta)[0])
     est_s = [0]*sparsity
-    est_s[0] = [[est_w,est_pos]]
+    est_s[0] = [est_w,est_pos]
     yhs = np.zeros((n,sparsity))
     yhs[:,0:1] = yh
     betas = np.zeros((pp,sparsity))
@@ -412,6 +412,46 @@ def bsel_nnls(y, xs, grid):
         yhs[:,i] = yh[:,0]
         est_w = beta
         est_pos=grid[active_set,:]
-        est_s[i] = [[est_w,est_pos]]
+        est_s[i] = [est_w,est_pos]
     return yhs, betas, est_s, min_sses
 
+def peak_1(beta,grid,dm,gap,thres):
+    """ Peak-finding algorithm applied to fODF with distance matrix dm
+
+    Parameters
+    ----------
+    beta : pp x 1 numpy array, coefficients of fODF
+    grid: pp x 3 grid points, directions of fODF
+    dm: pp x pp distance matrix
+    gap: scalar minimal gap distance parameter
+    thres: scalar minimal peak threshold parameter
+    
+    Outputs
+    -------
+    est_pos: Kx3 estimated position
+    est_w: Kx1 weights
+    """
+    beta2 = beta/sum(beta)
+    pp = np.shape(grid)[0]
+    sparsity = len(np.nonzero(beta)[0])
+    est_pos = np.zeros((sparsity,3))
+    est_w = np.zeros((sparsity,1))
+    flag = True
+    count = 0
+    while flag:
+        j_sel = rank_simple(beta2)[-1]
+        newmask = (dm[j_sel,:] < gap)
+        coef = sum(beta2[newmask])
+        if coef > thres:
+            est_pos[count,:] = grid[j_sel,:]
+            est_w[count] = coef
+            beta2[newmask] = 0
+            count = count+1
+        else:
+            flag = False
+        if max(beta2)==0:
+            flag = False
+    est_pos = est_pos[range(count),:]
+    est_w = est_w[range(count),:]
+    est_w = est_w/sum(est_w)
+    return est_pos, est_w

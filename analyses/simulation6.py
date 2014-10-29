@@ -7,6 +7,9 @@ import donuts.data as dnd
 s1 = dpd.get_sphere('symmetric362')
 s2 = s1.subdivide() # s2 has 1442 vertices
 grid = s2.vertices
+grid = grid[grid[:,1] >= 0,:]
+grid = du.normalize_rows(grid)
+dm = du.arcdist(grid,grid)
 kappas = np.arange(1.5,4,.1)
 bvecs = s1.vertices
 n= np.shape(bvecs)[0]
@@ -22,3 +25,5 @@ y0, y1 = du.simulate_signal_kappa(np.sqrt(true_kappa)*true_pos,true_w,bvecs,true
 yh, beta, est_pos, est_w = du.ls_est(y1,xs,grid)
 err = du.arc_emd(true_pos,true_w,est_pos,est_w)
 yhs, betas, est_s, sses= du.bsel_nnls(y1, xs, grid)
+errs = [du.arc_emd(true_pos,true_w,v[1],v[0]) for v in est_s]
+est_pos2,est_w2 = du.peak_1(beta,grid,dm,0.1,0.05)
