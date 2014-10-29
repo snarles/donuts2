@@ -461,7 +461,7 @@ def cap_sample(v,rad,res):
 
     Parameters
     ----------
-    v : 1 x 3 vector
+    v : (3,) vector
     rad: radius of cap, from 0 to 1 
     res: resolution of cap, the number of points will be approx. pi * res^2
 
@@ -470,14 +470,15 @@ def cap_sample(v,rad,res):
     vs: ?x3 unit vectors forming a cap around v
     """
     a = np.identity(3)
-    a[:,0] = v[0,:]
+    a[:,0] = v
     q,r = np.linalg.qr(a)
+    q[:,0] = v
     kk = 2*res + 1
-    x = fullfact([kk,kk])/resolution - 1
+    x = fullfact([kk,kk])/res - 1
     nms = norms(x)
     x = x[nms < 1,:]
     x = x*rad
-    x = np.vstack([1+0*x[:,0:1],x])
+    x = np.hstack([1+0*x[:,0:1],x])
     x = normalize_rows(x)
-    vs = np.dot(x,q)
+    vs = np.dot(x,q.T)
     return vs
