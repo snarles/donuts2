@@ -339,7 +339,7 @@ def arcdist(xx,yy):
     -------
     dd: a x b numpy array
     """
-    dd = np.arcsin(np.absolute(np.dot(xx,yy.T)))
+    dd = np.arccos(np.absolute(np.dot(xx,yy.T)))
     dd = np.nan_to_num(dd)
     return dd
 
@@ -367,7 +367,7 @@ def randvecsgap(k,gap):
             idxs[idx] = True
     return ans
 
-def bsel_test(y, xs, grid):
+def bsel_nnls(y, xs, grid):
     """ Fits the SFM using NNLS then uses backwards pruning
 
     Parameters
@@ -381,41 +381,37 @@ def bsel_test(y, xs, grid):
     yhs : n x K numpy array, predicted signal for K = 1...
     betas : p x K numpy array, the regression coefficients for K=...
     est_s : 1xK list, contains (est_pos,est_w) pairs
-    sses : 1xK, errors for backwards selection
+    min_sses : 1xK, errors for backwards selection
     """
     n = np.shape(y)[0]
-    yh, beta, est_pos, est_w = du.ls_est(y,xs,grid)
+    pp = np.shape(xs)[1]
+    yh, beta, est_pos, est_w = ls_est(y,xs,grid)
     sparsity = len(np.nonzero(beta)[0])
     est_s = [0]*sparsity
     est_s[0] = [[est_w,est_pos]]
     yhs = np.zeros((n,sparsity))
-    yhs[:,0] = yh
-    betas = np.zeros((n,sparsity))
+    yhs[:,0:1] = yh
+    betas = np.zeros((pp,sparsity))
     betas[:,0] = beta
     sparss = sparsity-np.array(range(sparsity))
-    sses = [0.]*sparsity
-    sses[0] = sum((y-yh)**2)
     min_sses = np.array([100.]*sparsity)
-    min_sses[0] = sum((y1-yh)**2)
+    min_sses[0] = sum((y-yh)**2)
     active_sets = [0.]*sparsity
     active_set = np.nonzero(beta)[0]
-    for i in range(sparsity):        
+    for i in range(1,sparsity):        
         active_sets[i] = active_set
-        if i < sparsity-1:
-            sse = np.array([0.]*len(active_set))
-            for j in range(len(active_set)):
-                a_new = np.delete(active_set,j,0)
-                yh_t = du.ls_est(y,xs[:,a_new],grid[a_new,:])[0]
-                sse[j] = sum((y-yh_t)**2)
-            sses[i]=sse
-            min_sses[i+1] = min(sse)
-            j_sel = du.rank_simple(sse)[0]
-            active_set = np.delete(active_set, j_sel,0)
-            yh, beta, est_pos, est_w = du.ls_est(y,sel_xs[:,active_set],grid[active_set,:])
-            yhs[:,i] = yh
-            est_w = beta
-            est_pos=grid[active_set,:]
-            est_s[i] = [[est_w,est_pos]]
-    spars = [len(v) for v in active_sets]
-    return errs, min_sses, spars,sumbs
+        sse = np.array([0.]*len(active_set))
+        for j in range(len(active_set)):
+            a_new = np.delete(active_set,j,0)
+            yh_t = ls_est(y,xs[:,a_new],grid[a_new,:])[0]
+            sse[j] = sum((y-yh_t)**2)
+        min_sses[i] = min(sse)
+        j_sel = rank_simple(sse)[0]
+        active_set = np.delete(active_set, j_sel,0)
+        yh, beta, est_pos, est_w = ls_est(y,xs[:,active_set],grid[active_set,:])
+        yhs[:,i] = yh[:,0]
+        est_w = beta
+        est_pos=grid[active_set,:]
+        est_s[i] = [[est_w,est_pos]]
+    return yhs, betas, est_s, min_sses
 
