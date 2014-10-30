@@ -6,6 +6,29 @@ import scipy.spatial.distance as dist
 import donuts.emd as emd
 
 
+from numpy.linalg import lapack_lite
+lapack_routine = lapack_lite.dgesv
+def faster_inverse(A):
+    """ inverts the matrices a = A[i,:,:]
+    the following code was written by Carl F 
+    see http://stackoverflow.com/questions/11972102/is-there-a-way-to-efficiently-invert-an-array-of-matrices-with-numpy
+    """
+    b = np.identity(A.shape[2], dtype=A.dtype)
+
+    n_eq = A.shape[1]
+    n_rhs = A.shape[2]
+    pivots = np.zeros(n_eq, np.intc)
+    identity  = np.eye(n_eq)
+    def lapack_inverse(a):
+        b = np.copy(identity)
+        pivots = np.zeros(n_eq, np.intc)
+        results = lapack_lite.dgesv(n_eq, n_rhs, a, n_eq, pivots, b, n_eq, 0)
+        if results['info'] > 0:
+            raise LinAlgError('Singular matrix')
+        return b
+
+    return np.array([lapack_inverse(a) for a in A])
+
 def rank_simple(vector):
     return sorted(range(len(vector)), key=vector.__getitem__)
 
@@ -42,7 +65,22 @@ def inds_fullfact(levels, col_inds, values):
     -------
     inds : list of ? integers, indices where selected values are taken
     """
-
+    nfacts = len(levels)
+    vals = np.array([-1]*nfacts,dtype=int)
+    vals[col_inds] = values
+    tracker = nfacts-1
+    cur_arr = np.array([0],dtype=int)
+    flag = True
+    temp = [1] + levels[::-1]
+    temp = temp[0:-1]
+    pd = np.cumprod(temp,dtype=int)[::-1]
+    while tracker > -1:
+        if vals[tracker]==-1:
+            cur_arr = np.hstack([cur_arr + pd[tracker]*ii for ii in range(levels[tracker])])
+        if vals[tracker] > 0:
+            cur_arr = cur_arr + pd[tracker]*vals[tracker]
+        tracker = tracker-1
+    return cur_arr
 
 def norms(x) :
     # computes the norms of the rows of x
