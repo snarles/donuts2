@@ -29,6 +29,21 @@ def fullfact(levels):
             x = np.hstack([x2,x4])
     return x
 
+def inds_fullfact(levels, col_inds, values):
+    """ Returns a list of indices for which fullfact(levels)[inds, col_inds[i]] = values[i]
+
+    Parameters
+    ----------
+    levels : list of K integers specifying number of levels of each factor
+    col_inds: indices of columns 0...(K-1)
+    values: values, value[i] between 0...levels[col_inds[i]]
+
+    Returns
+    -------
+    inds : list of ? integers, indices where selected values are taken
+    """
+
+
 def norms(x) :
     # computes the norms of the rows of x
     nms = np.sum(np.abs(x)**2,axis=-1)**(1./2)
@@ -482,3 +497,54 @@ def cap_sample(v,rad,res):
     x = normalize_rows(x)
     vs = np.dot(x,q.T)
     return vs
+
+def build_bcn_xss(est_pos,bvecs,kappa,rad,res):
+    """ Build the xss list for best_combo_nnls using peaks found by peakfinding algorithm
+
+    Parameters
+    ----------
+    est_pos : (K,3) peaks
+    bvecs: (n,3) measurement vectors
+    kappa: parameter for Ste-Tan eq
+    rad: radius of cones around peaks
+    res: resolution of cap, the number of points will be approx. pi * res^2
+
+    Outputs
+    -------
+    xss : K-length list, xss[i] is (n,?) design matrix
+    grids: K-length list, corresponding positions
+    """
+    K = np.shape(est_pos)[0]
+    xss = [0]*K
+    grids = [0]*K
+    for ii in range(K):
+        grids[ii] = cap_sample(est_pos[ii,:],rad,res)
+        xss[ii] = ste_tan_kappa(np.sqrt(kappa) * grids[ii],bvecs)
+    return grids,xss
+
+def best_combo_nnls(y,xss,grids):
+    """ Best K-subset nnls taking 1 (or 0) directions from each set of directions xss[0],..,xss[K]
+
+    Parameters
+    ----------
+    y : (n,1) data
+    xss : K-length list, xss[i] is (n,pps[i]) design matrix
+    grids: K-length list, corresponding positions
+
+    Outputs
+    -------
+    sses: prod(pp[i]+1)-list, sum of square errors for combinations
+    choices: assignments of directions
+    est_pos: direction of best subset
+    est_w: weights of best subset
+    """
+    pps = np.array([np.shape(xs)[2] for xs in xss])
+    choices = fullfact(pps)
+    nchoice = np.shape(choices)[0]
+    K = length(xss)
+    grams = np.zeros((nchoice,K**2))
+    # fill out the gram matrix
+    for ii in range(0,K):
+        for jj in range(ii,K):
+            gram0 = np.dot(xss[ii].T,xss[jj])
+            
