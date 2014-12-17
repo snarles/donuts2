@@ -1,0 +1,782 @@
+\documentclass[11pt]{article} 
+
+% packages with special commands
+\usepackage{amssymb, amsmath}
+\usepackage{epsfig}
+\usepackage{array}
+\usepackage{ifthen}
+\usepackage{color}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+%\usepackage{mathtools}
+\definecolor{grey}{rgb}{0.5,0.5,0.5}
+
+\begin{document}
+\newcommand{\tr}{\text{tr}}
+\newcommand{\E}{\textbf{E}}
+\newcommand{\diag}{\text{diag}}
+\newcommand{\argmax}{\text{argmax}}
+\newcommand{\Cov}{\text{Cov}}
+\pagestyle{fancy}
+
+\title{Fitting and validating single-voxel models in DTI}
+
+\author{Charles Zheng}
+
+\maketitle
+
+\begin{abstract}
+Diffusion MRI provides a wealth of information about properties of
+brain tissue.  By fitting statistical models to MRI data, it is
+possible to infer scientifically relevant properties of the tissue,
+such as the number of fiber populations present in a particular voxel
+as well as their directions, and biological properties resulting in
+differing axial and radial diffusivity.  The resulting models can be
+of independent interest, or could be used in a preprocessing step for
+tractography.  However, in many voxels, uncertainty in
+the true number of distinct fiber populations leads to ambiguity in
+the choice of the most appropriate voxel.
+Thus both for model selection purposes and for downstream analysis,
+it is important to have a statistical means of assessing the
+error between the fitted model and the truth.  We discuss two models
+for modelling voxels--the tensor model and a NNLS model, and two
+methods for assessing error--cross-validated RMSE and cross-validated
+earthmover distance.  Our simulation experiments demonstrate how model
+accuracy and reliability of model error estimates vary depending on
+the situation.
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{Main goals}
+
+Diffusion weighted magnetic resonance imaging (DWI) provides the
+unique capability to noninvasively image the connective structure of
+the brain, as well as infer other properties of brain tissue.
+By measuring the directional diffusivity of water in each voxel, DWI
+measurements provide the information needed to infer the existence of
+single or multiple populations of white matter fascicles crossing
+through each voxel.
+These inferences about the directions and relative volumes of
+fascicles on a per-voxel basis can then be used to infer the
+larger-scale connective structure of the brain.
+Additionally, DWI measurements can also be used to estimate the radial
+and axial diffusivity of the fibers in each voxel, which can shed
+light on additional biological properties of interest.\cite{Rokem2013}
+\cite{Pestilli2013}\cite{Behrens2009}
+
+The fundamental physical quantity of interest we wish to estimate from
+each voxel is the fiber orientation distribution function (fODF)
+\cite{Behrens2009}, a distribution function on the sphere describing
+the relative abundance of fibers aligned in a given direction residing
+in the voxel.
+Various methods exist for estimating the fODF from data;
+however, regardless of which method is used, there are at least two
+important reasons for obtaining estimates of the error between the
+fitted model and the true fODF.
+
+Firstly, the estimated error can be used to choose the most
+appropriate model, as Rokem et al. \cite{Rokem2013} demonstrated in
+their work on comparing the tensor model and the sparse fascicle model (SFM.)
+
+Secondly, the process of fitting fascicles to the data requires some
+quantification of the uncertainty associated with a candidate fascicle
+\cite{Behrens2009}\cite{Pestilli2013}.
+
+Previous work has characterized uncertainty in the fitted fODF in the
+form of an uncertainty ODF, or uODF\cite{Behrens2009}; however, these
+methods have generally been derived for the context of modelling
+single-fiber voxels.
+In principle, the concept of an uODF can be extended to multiple fiber
+models; however, the representation of a joint uncertainty
+distribution over multiple directions and weights quickly becomes
+unwieldy.
+Rokem et al. \cite{Rokem2013} propose the root mean squared
+error (RMSE) between the model and an independent data set as a
+measure of error appropriate for multiple fiber models.
+In our paper, we consider the use of the RMSE as an error metric, but
+also propose an alternative error metric: the earth mover's distance.
+
+From a theoretical perspective, it is important to distinguish between
+an empirical error metric, such as RMSE, and a ``true'' error between
+the estimated fODF and the true fODF.
+While the true error can never be computed in practice,
+it can be computed in simulations and in theory,
+hence providing a valuable guide for developing methodology for
+model-fitting and for error estimation.
+This work introduces the use of the earth mover's distance (EMD) as a true error
+metric for quantifying the discrepancy between the estimated fODF and
+true fODF.
+While the earth mover's distance sees a broad range of applications,
+including image processing, biology, and physics,
+we have not previously seen it used in DTI.
+
+Using the EMD as an error metric for multiple fiber modelling of DTI
+data, we develop methodology for model selection and fitting for DTI and error
+estimation.
+
+In simulation experiments, we validate the proposal of Rokem et al
+\cite{Rokem2013} in using RMSE for model selection.
+Additionally, we show that in settings where favorable SNR can be
+achieved, the true EMD can be estimated using a cross-validation approach.
+
+\subsection{Assumptions}
+
+The secondary properties for the DWI signal--the axial and radial
+diffusivities, are described in the Stejskal and Tanner equation\cite{Stejskal1965} for
+describing the diffusion signal $S$ measured in direction $\theta$;
+\[
+S(\theta) = S_0 e^{-b(\lambda_1(v^T \theta)^2 - \lambda_2(w^T
+  \theta)^2 - \lambda_3(z^T \theta)^3)}
+\]
+where $b$ is an experimentally controlled variable
+\cite{Matiello1997},
+$v$ is the primary direction of diffusion, $\lambda_1$ is the axial
+diffusivity.
+We work under the assumption that $\lambda_2=\lambda_3$,
+so that $\lambda_2$ is the radial diffusivity, and $w,z$ are arbitrary
+vectors orthogonal to $v$.
+
+It is known that $\lambda_1$ and $\lambda_2$ are not entirely
+instrisic to the tissue, but vary with $b$ [source?].
+However, it is an unsettled question as to whether $\lambda_1$ and
+$\lambda_2$ vary between voxels for a fixed $b$ value.
+Hence in this work we consider both possibilities, and develop
+methodology appropriate for either case.
+\begin{itemize}
+\item If $\lambda_1$ and $\lambda_2$ do not vary for fixed $b$, then
+  they can be easily estimated from the voxels lying in the corpus
+  callosum.  Hence, we can develop our methods under the assumption.
+  that $\lambda_1$ and $\lambda_2$ are known.
+\item If $\lambda_1$ and $\lambda_2$ do vary for fixed $b$, then it
+  may be necessary to estimate them for individual voxels or even
+  individual fibers.
+\end{itemize}
+
+Even when $\lambda_1$ and $\lambda_2$ are known, it is important to
+note that the optimal model used for \emph{fitting} the data need not
+use the same $\lambda_1$ and $\lambda_2$ which \emph{produced} the
+data.
+This is especially true in the high-noise case, in which using a lower
+value of $\lambda_1$ for the model can help obtain a more accurate
+estimate by sparsifying the estimate.
+The methods we [hope to] develop for unknown $\lambda_1,\lambda_2$ choose the
+optimal $\lambda_1$ for the model adaptively depending on the SNR.
+Hence, under high-noise settings, we suggest the use of the methods
+developed for unknown $\lambda_1,\lambda_2$.
+In low-noise settings in which $\lambda_1,\lambda_2$ are known, we
+present extensive simulation results demonstrating the effectiveness
+of our procedures.
+
+\section{Methods}
+
+\subsection{The sparse fascicle model}\label{sec:model}
+
+[Copied from Ariel's paper]
+The sparse fascicle model (SFM) implementation is in the family of
+models first proposed by Frank (Frank, 2001; Frank, 2002).
+These models have since evolved in the work of Behrens et al. (Behrens et al.,
+2007), DellAcqua et al. (DellAcqua et al., 2007) and Tournier et
+al. (Tournier et al., 2004, 2007) .
+These models all treat each MRI voxel as comprising two types of compartments: (a) a set of oriented fascicles of various sizes and volume fractions, with each fascicle giving rise to an anisotropic diffusion signal, and (b) nonoriented tissue that gives rise to an isotropic diffusion signal. The isotropic component is a term that is constant across measurement directions. Each fascicle component is an anisotropic term, summarizing the diffusion from a fiber population oriented in a particular direction. The diffusion signal is modeled as the sum of the signals from these compartments (Behrens et al., 2007)
+
+The data consists of directional measurements for
+a single voxel, $y_1,\hdots,y_n$, for measurement directions (`b
+vectors') $\theta_1,\hdots,\theta_n$ for a single known $b$ value.
+Additionally, for the same voxel we have nondirectional MRI
+measurements $z_1,\hdots,z_m$.
+The voxel of interest has an unknown volume $S_0$, as well as
+$\ell$ diffusion directions
+$v_1,\hdots,v_\ell$ such that $||v_i||=1$ with weights $w_1,\hdots,w_\ell$ such that
+$w_1+\cdots+w_\ell=1$, where $\ell$ is unknown.
+Define the $Rician(S,\sigma^2)$ as the distribution of $\sqrt{(S+\sigma
+Z_1)^2+(\sigma Z_2)^2}$ where $Z_1,Z_2$ are iid standard normal.
+For some unknown noise $\sigma^2$, the data is distributed as
+\[
+z_i \sim Rician(S_0, \sigma^2)
+\]
+\[
+y_i \sim Rician(S(\theta_i), \sigma^2)
+\]
+where
+\[
+S(\theta) = S_0 e^{-b\lambda_2}\sum_{j=1}^\ell e^{-b(\lambda_1but show that even better discrimination can be achieved by using a
+new error metric, RCV-SEMD.-\lambda_2)
+  (v_j^T \theta)^2}
+\]
+as descibed by the Stejskal-Tanner equation \cite{Stejskal1965}.
+
+Since $\lambda_1,\lambda_2$ have been empirically observed to change
+depending on $b$, it is more useful for us to reparameterize in forms
+of a signal strength parameter $B$ and a kernel shape parameter
+$\kappa$,
+defined by
+\[
+B = e^{-b\lambda_2}
+\]
+\[
+\kappa = b(\lambda_1-\lambda_2)
+\]
+hence
+\[
+S_0 B\sum_{j=1}^\ell e^{-\kappa (\theta_i^T v_j)^2}
+\]
+For theoretical purposes, parameterization can be further reduced by
+noting that scaling $B \to kB$ has the same effect on estimation as
+decreasing $\sigma^2 \to \sigma^2/k^2$.
+Hence all of our simulation studies use $B=1$ and only vary $\sigma^2$.
+
+\subsection{True error metric.}
+
+As our main goal is to recover the fODF,
+\[
+fODF(x) = \sum_{i=1}^\ell \frac{w_i}{2}\delta(\min\{x-v_i,x+v_i\})
+\]
+parameterized by directions $v_i$ and the relative
+weights of those directions $w_i$,
+where $\delta(x)$ is the Dirac delta function, with the property that
+$\int_{\mathbb{R}^3} \delta(x) = 1$ and $\delta(x) = 0$ for all $x \neq
+0$.
+
+From whatever fitting procedure we use, we arrive at an estimated
+fODF,
+\[
+\hat{fODF}(x) = \sum_{i=1}^{\hat{\ell}} \frac{\hat{w}_i}{2}\delta(\min\{x-\hat{v}_i,x+\hat{v}_i\})
+\]
+where $\hat{v}_i$ are estimated directions and $\hat{w}_i$ are
+estimated weights.
+
+Hence we consider finding an error metric for measuring the
+discrepancy between between 
+the true fODF and the estimate $\hat{fODF}$
+based on a set of intuitive criteria.
+The metric should satisfy common-sense criteria such as
+symmetry and continuity.
+Additionally, we would like our metric to give an intuitive answer in
+the special case where there is only one true direction $v$ and one
+estimated direction $\hat{v}$, and $w=\hat{w}=1$.
+Specifically, we would like our metric to either reduce to the
+the symmetric cosine distance $d_C(v,\hat{v})=\cos^{-1}(|v^T
+\hat{v}|)$,
+or the symmetric Euclidean distance
+\[
+d_S(v,\hat{v}) = \min \{||v-v'||^2, ||v+v'||^2\}
+\]
+Here we use the term `symmetric' to refer to the antipodal symmetry
+where $v$ is equivalent to $-v$.
+
+Altogether we arrive at the following criteria:
+
+\noindent \textbf{Criteria for error metric $d$}
+\begin{enumerate}
+\item \emph{Rotational symmetry}:
+For any orthogonal rotation $R$, if we define $fODF'(x)=fODF(Rx)$ and
+$\hat{fODF}'(x) = \hat{fODF}(Rx)$, then
+\[
+d(fODF, \hat{fODF}) = d(fODF',\hat{fODF}')
+\]
+\item \emph{Continuity}:
+Let $\hat{fODF}^1,\hat{fODF}^2$ be two estimates.
+As $\alpha \to 0$, we have
+\[
+d(fODF,(1-\alpha)\hat{fODF}^1+\alpha\hat{fODF}^2) \to d(fODF,\hat{fODF})
+\]
+\item \emph{One direction case}:
+When 
+\[
+fODF = \delta(\min\{x-v,x+v\})
+\]
+and
+\[
+\hat{fODF} = \delta(\min\{x-\hat{v},x+\hat{v}\})
+\]
+we have either
+\[
+d(fODF,\hat{fODF}) = d_C(v,\hat{v})=\cos^{-1}(|v^T \hat{v}|)
+\]
+or
+\[
+d(fODF,\hat{fODF}) =d_S(v,\hat{v}) = \min \{||v-v'||^2, ||v+v'||^2\}
+\]
+\end{enumerate}
+
+We are aware of at least three error metrics which satisfy all of the conditions:
+\begin{itemize}
+\item $d_{SEMD}$: The symmetric earth mover's distance based on Euclidean distance
+\item $d_{CEMD}$: The symmetric earth mover's distance based on cosine distance
+\item $d_{RP}$: Random projection distance
+\end{itemize}
+
+The classic earth mover's distance $d_{EMD}$ is defined as a
+distance metric on distributions in $\mathbb{R}^p$,
+$d_{EMD}(P,Q)$.
+An intuitive motivation for the earthmover distance is as follows.
+Suppose $P$ is a discrete probability distribution with mass $w_i$ at points
+$\theta_i$ for $i=1,\hdots,n$ and $Q$ is a discrete probability
+distribution with mass $w'_i$ at points $x'_i$ for $i = 1,\hdots,m$.
+Think of
+$\{x_i,\hdots,x_n\}$ is a set of piles of dirt,
+where the amount of dirt located at $x_i$ is $w_i$.
+Meanwhile $\{x'_i,\hdots,x'_m\}$ is a set of holes, where the hole
+located at $x'_i$ can be filled with an amount dirt $w'_i$.
+Now imagine a worker who can move arbitrary amounts of dirt from
+the piles to the holes.
+Supposing that the effort required to move an amount $u$ of dirt a
+distance $l$ is $ul$, the earthmover distance $d_{EMD}$
+measures the minimum amount of effort required to move all the dirt in
+the piles $\{(x_i,w_i)\}$ to the holes $\{(x'_i,w'_i)\}$.
+Now we define the earth mover's distance formally by means of a $n\times m$
+assignment matrix $C$ where the entries $C_{i,j}$ represents the
+amount of dirt moved from pile $x_i$ to hole $x'_j$.
+Hence the earth mover's distance is defined as
+\[
+d_{EMD}(P,Q) = \min_C \sum_{i=1}^n \sum_{j=1}^m d(x_i,x'_j)C_{i,j}
+\]
+\[
+\text{subject to: } C_{i,j} > 0,\ \sum_{j=1}^m C_{i,j} = w_i,\
+\sum_{i=1}^n C_{i,j} = w'_j
+\]
+where $d(\cdot)$ is euclidean distance. 
+The earth mover's distance can be computed using linear programming.
+
+We define $d_{SEMD}$ by replacing $d(\cdot)$ in the original earthmover
+distance with the symmetrized version $d_S$
+\[
+d_{SEMD}(fODF,\hat{fODF})=\min_C \sum_{i=1}^\ell \sum_{j=1}^{\hat{\ell}} d_S(v_i,\hat{v}_j)C_{i,j}
+\]
+Clearly, $d_{SEMD}$ reduces to $d_S$ in the one direction case.
+
+Likewise, we define $d_{CEMD}$ by replacing $d(\cdot)$ in the original earthmover
+distance with $d_C$
+\[
+d_{CEMD}(fODF,\hat{fODF})=\min_C \sum_{i=1}^\ell \sum_{j=1}^{\hat{\ell}} d_C(v_i,\hat{v}_j)C_{i,j}
+\]
+and it is also clear that $d_{CEMD}$ reduces to $d_{C}$ in the
+one direction case.
+
+The random projection metric is based on the expected
+lower-dimensional earthmover distance between projections of
+the true and estimated directions when projected to the same random
+subspace,
+that is
+\[
+d_{RP}(fODF,\hat{fODF}) = 2\E\left[d_S(\{(u^Tv_i,w_i)\}_{i=1}^\ell,\{(u^T\hat{v}_i,\hat{w}_i\})_{i=1}^{\hat{\ell}})\right]
+\]
+where $u$ is uniform random on the surface of the unit sphere.
+In the one direction case, $d_{RP}$ reduces to $d_S$.
+In practice, one can approximate the expectation by summing over a
+high-degree spherical design\cite{Hardin1996}.
+
+Out of the previous three metrics, we chose to implement the
+symmetrized earthmover distance $d_{SEMD}$.
+We rule out the random projection metric due to its inadequacy when
+comparing weighted sets of vectors with large numbers of equally
+weighted vectors.
+And since $d_{SEMD}$ and $d_{CEMD}$ are asympotically equivalent when
+estimates are close to the truth, we chose not to investiagte
+$d_{CEMD}$ in the current work.
+However, in a high noise scenario, there may be a considerable
+difference between $d_{SEMD}$ and $d_{CEMD}$.
+
+
+\subsection{Model Fitting}
+
+\subsubsection{Tensor model}
+Under the assumption that there is only one
+direction present, $\ell=1$, we estimate $S_0 = \bar{z}$ and 
+use least-squares to fit the model
+\[
+\frac{y_i}{\bar{z}} = \beta e^{-\kappa_f  (\theta_i^T v)^2} + \epsilon
+\]
+where $||v||=1$.
+If $B$ is known, then $\beta$ can be restricted to be equal to $B$.
+Similarly, if $\kappa$ is known, then  $\kappa_f$ can be set to
+$\kappa$.
+The tensor model is quite robust to choice of $\beta$ and $\kappa_f$, however.
+From the fitted model, we estimate the direction as $\hat{v}_1 = v$ and
+weight as $\hat{w}_1=1$.
+
+\subsubsection{Non-negative least squares model}
+[TO COPY: stuff from 2.5.3 of Ariel's paper]
+
+Assuming more than one direction $\ell > 1$,
+we choose a set of candidate directions $u_1,\hdots,u_g$ with $||u_i||=1$.
+Often the practice is to use the measurement directions as the
+candidate directions, i.e. $g=n$ and $u_i = \theta_i$.
+
+Then again estimating $S_0$ by $\bar{z}$, we fit the model
+\[
+\frac{y_i}{\bar{z}} =\sum_{j=1}^g \beta_j e^{-\kappa_f  (\theta_i^T u_j)^2} +\epsilon
+\]
+where $\beta_j$ are constrained to be non-negative.
+
+In the case that $\kappa$ is known and the SNR is high, it is
+advisable to set $\kappa_f = \kappa$.
+Otherwise, a cross-validation based procedure can be used to choose
+$\kappa_f$.
+
+From the fitted model, one may apply a thresholding rule to select
+estimated directions and weights, or use L1 regularization to ensure
+sparsity in the estimated $\hat{\beta}$.
+For this paper, we consider estimating the directions without
+thresholding, so
+$\hat{v}_1,\hdots,\hat{v}_g = u_1,\hdots,u_g$ and $\hat{w}_i =
+\hat{\beta}_i/\sum_{j=1}^g \beta_j$.
+
+\subsubsection{Choosing $\kappa_f$}
+
+A qualitative heuristic for choosing $\kappa_f$ is to fit the NNLS
+model for a grid of $\kappa_f$ values.
+
+For low SNR, the CV-RMSE should be intially decreasing, then increase.
+When such a curve is seen, choosing $\kappa_f$ at the minimum of the
+curve generally produces good results.
+However, for high SNR and high true $\kappa$, the CV-RMSE curve (\S\ref{cvrmse}) may be
+decreasing and then flatten out.
+Choosing $\kappa_f$ correctly in such cases becomes difficult.
+However, in such cases the RCV-SEMD (\S\ref{cvsemd}) curve may provide
+additional guidance.
+As the point where CV-RMSE curve starts to flatten out,
+the RCV-SEMD curve will sometimes start increasing.
+Choosing the $\kappa_f$ before the RCV-SEMD starts to increase but
+after the CV-RMSE curve starts to flatten out seems a viable
+heuristic,
+but more detailed study is still needed.
+
+\subsection{Error estimation}
+
+\subsubsection{CV-RMSE}\label{cvrmse}
+
+Rokem et al \cite{Rokem2013} suggest using the RMSE as an error estimate.
+Given a predicted signal $\hat{S}(\theta)$,
+and a set of replicate measurements $y'$ for the same voxel,
+one computes
+\[
+RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^n (y'_i - \hat{S}(\theta_i))^2}
+\]
+
+Since the RMSE varies depending on the replicate measurements, we
+define a denoised version,
+\[
+RMSD = \sqrt{\frac{1}{n}\sum_{i=1}^n (S(\theta_i) - \hat{S}(\theta_i))^2}
+\]
+which cannot be computed in practice, but can be calculated in simulations.
+
+Since we do not assume the availability of a replicate data set,
+we use cross-validation to obtain a cross-validate root mean
+squared error (CV-RMSE) as follows.
+
+First, partition the directions and corresponding observations
+$(\theta_1,y_1),\hdots,(\theta_n,y_n)$ into two equal sets,
+$(\Theta^{(1)},Y^{(1)}) = \{(\theta_1^{(1)},y_1^{(1)}),\hdots,(\theta_{n/2}^{(1)},y_{n/2}^{(1)})\}$ and 
+$(\Theta^{(2)},Y^{(2)}) = \{(\theta_1^{(2)},y_1^{(2)}),\hdots,(\theta_{n/2}^{(2)},y_{n/2}^{(2)})\}$.
+If $n$ is odd, assign the leftover direction to one of the two sets
+arbitrarily.
+
+Fit the model to the first partition $(\Theta^{(1)},Y^{(1)})$
+to obtain the predicted signal $\hat{S}^{(1)}(x)$.
+Do likewise for the second partition $(\Theta^{(2)},Y^{(2)})$
+to obtain another predicted signal $\hat{S}^{(2)}(x)$.
+Then define CV-RMSE as
+\[
+\text{CV-RMSE} = \sqrt{\frac{1}{n}\sum_{j=1}^2 \sum_{i=1}^{n/2} (y_i^{(3-j)} - \hat{S}^{(j)}(\theta_i^{(3-j)}))^2}
+\]
+
+\subsubsection{CV-SEMD}\label{cvsemd}
+
+In a similar way, we compute a cross-validated earth mover's distance.
+Take the partitions $(\Theta^{(1)},Y^{(1)})$ and $(\Theta^{(2)},Y^{(2)})$
+defined previously.
+Fit the model to the first partition to obtain an estimate
+$\hat{fODF}^{(1)}$.
+Also fit the model to the second partition to obtain the estimate
+$\hat{fODF}^{(2)}$.
+Then compute
+\[
+\text{CV-SEMD} = d_{SEMD}(\hat{fODF}^{(1)},\hat{fODF}^{(2)})
+\]
+
+CV-SEMD will generally not be conservative for the true SEMD under the
+tensor model.
+
+Under the NNLS model, CV-SEMD will also be downwardly biased due
+to discretization error.
+
+In order to combat discretization error, we recommend the following
+procedure to obtain a rotated CV-SEMD, RCV-SEMD:
+\begin{enumerate}
+\item Split the data into two partitions, $(\Theta^{(1)},Y^{(1)})$ and
+  $(\Theta^{(2)},Y^{(2)})$
+\item Independently generate $R_1,R_2$ random orthogonal matrices
+\item Fit a NNLS model to $(\Theta^{(1)},Y^{(1)})$ using candidate
+  directions  $u_i^{(1)} = R_1 \theta_i$, obtaining $\hat{fODF}^1$
+\item Fit a NNLS model to $(\Theta^{(2)},Y^{(2)})$ using candidate
+  directions  $u_i^{(2)} = R_2 \theta_i$, obtaining $\hat{fODF}^2$
+\item Compute
+\[
+\text{RCV-SEMD} = d_{SEMD}(\hat{fODF}^1, \hat{fODF}^2)
+\]
+\end{enumerate}
+
+\subsection{Simulation design}
+
+\subsubsection{Common Setup}
+
+In our simulation models, we have a true fODF parameterized by
+$\{(v_i,w_i)\}_{i=1}^\ell$, and parameters $\kappa, B, \sigma^2$.
+For varying $n$, we use a measurement grid $\theta_i$ obtained from Thomson electron
+distributions \cite{Wales2006}.
+Then the signal is generated as
+\[
+y_i \sim Rician(S(\theta_i), \sigma^2)
+\]
+where
+\[
+S(\theta) = S_0 e^{-b\lambda_2}\sum_{j=1}^\ell e^{-b(\lambda_1-\lambda_2)
+  (v_j^T \theta)^2}
+\]
+
+To the resulting data $y$ we fit the tensor model and the NNLS
+model.
+We evaluate error using
+\begin{itemize}
+\item CV-RMSE for tensor and NNLS models
+\item CV-SEMD for tensor and NNLS models
+\item RCV-SEMD for NNLS model only 
+\end{itemize}
+
+\subsubsection{Two-Signal Simulation}\label{sec:twosig}
+
+Our first simulation explores the effect of varying parameters on
+model fits and error estimates.
+We vary parameters $n,\kappa,\sigma^2$ and also $v_1,w_1,c$.
+Meanwhile $v_2$ is controlled by an additional parameter $c$ with 
+\[v_2 = c v_1+\sqrt{1-c^2} v_1^\perp\]
+where $v_1^\perp$ is a random unit vector orthogonal to $v_1$,
+and of course $w_2 = 1-w_1$.
+
+We fit the NNLS model to the data using the correct $\kappa$.
+
+The setup of the experiment was as follows:
+
+\noindent Setup for experiment displayed in Figure ~\ref{fig:mse1}
+\begin{enumerate}
+\item True parameters are $\kappa=1$, $B=1$. $\sigma$ is varied from
+  0.03 to 0.07.
+\item True directions $v_1$, $v_2$ are random orthogonal vectors.
+\item True weight $w_1$ is varied.
+\item $\theta_1,\hdots,\theta_{122}$ are obtained from a Thomson electron
+  placement [cite]
+\item $y_i$ is generated as $Rician(S(\theta_i),\sigma^2)$ for $S(\theta) =
+  w_1 e^{-2 (v_1^T \theta)^2} + w_2 e^{-2(v_2^T \theta)^2}$.  A replicate $y'_i$
+    is generated as well
+\item NNLS is fit to $y$ using $\kappa_{fit}=1$ and candidate vectors
+  $\theta_1,\hdots,\theta_{122}$ to obtain coefificents $\beta$ and thus
+  $\hat{fODF}$.
+\item CV-RMSE, CV-SEMD and RCV-SEMD are computed as described.
+\item Steps 2-3 are repeated for 100 replications. 
+Figure ~\ref{fig:mse1} displays the averaged results.
+\end{enumerate}
+
+\subsubsection{Synthetic Data}
+
+We derived realistic parameters for a synthetic whole-brain data set
+by using data obtained from [details about Franco's brainscan.]
+
+The data contains voxel data for each of three $b$-values, $b=1000$,
+$b=2000$, and $b=4000$.
+For each $b$-value, we use the subset of voxels mapped to the corpus
+callosum to obtain estimated parameters $\sigma^2$, $B$, and $\kappa$.
+
+We estimate the SNR in each voxel, and then select a subset of the
+voxels with high SNR.
+For each of these voxels, we fit a NNLS model using the correct $\kappa$.
+Additionally we sparsify the NNLS model by the following procedure:
+
+\noindent\textbf{Best Subset procedure}
+\begin{enumerate}
+\item Let $\hat{\beta}$ be the estimate obtained from NNLS.  Let $I$
+  be the set of indices $i$ such that $\hat{\beta}_i > 0.001$.
+\item For $k=1,2,3$ do the following:
+\item For each subset $S \subset I$ of size $k$, fit a NNLS model to
+  the data using candidate directions $\{u_i: i \in S\}$.
+\item Select the subset $S_k$ with the best in-sample error, let
+  $\hat{\beta}^{(k)}$ be the corresponding coefficient estimate.
+\item Compute the CV error $\text{CV-RMSE}_k$ for that subset, by
+  fitting a NNLS with candidate directions $\{u_i: i \in S_k\}$ to
+  $(\Theta^{(1)},Y^{(1)})$ 
+and doing the same for $(\Theta^{(2)},Y^{(2)})$. 
+\item The raw CV-RMSE estimates  $\text{CV-RMSE}_k$ will still tend to
+  favor large subsets.  Therefore, define modified $\text{CV-RMSE}_k'
+  = k \text{CV-RMSE}_k$.
+\item Select $k$ based on the lowest $\text{CV-RMSE}_k'$.
+Then obtain sparsified $\hat{fODF}$ based on $\hat{\beta}^{(k)}$.
+\end{enumerate}
+
+\subsubsection{Fitting $\kappa$}
+
+Supposing that $\kappa$ could vary between voxels for a fixed $b$
+value,
+it becomes important to develop a method for fitting models with
+unknown $\kappa$.
+[To be continued]
+
+\section{Results}
+
+\subsection[RCV-EMD correlated]{RCV-EMD better correlated with true EMD than CV-RMSE}
+
+The two-signal simulation \S\ref{sec:twosig} demonstrates that even
+under high SNR conditions, the CV-RMSE can be anti-correlated with the true
+EMD.  Yet, under such conditions, the CV-EMD remains closely
+correlated with EMD.
+
+Figure \ref{fig:mse1} demonstrates how, as the parameter $w_1$ varies,
+average true earthmover distance $EM$ decreases with increasing $w_1$;
+however, the CV-RMSE actually increases.
+On the other hand, the RCV-EMD remains well correlated with the EMD.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{figure_mse_vs_em_00.pdf}
+\caption{Inadequacy of CV-RMSE in measuring accuracy of model fit.
+Notice that for all values of $\sigma$, as $w_1$ increases, the
+average true earthmover distance $EM$ decreases;
+however, the CV-RMSE actually increases.
+The effect is especially noticeable for $\sigma=0.03$.
+}
+\label{fig:mse1}
+\end{figure}
+
+\subsection[CV-RMSE discriminates]{CV-RMSE discriminates between the tensor and NNLS model}
+
+In the synthetic data simulation, we compare the actual fit of the
+tensor model and the NNLS model when the true number of directions
+$\ell$ varies from 1 to 3.
+We see in Figure \ref{fig:s3bar1} that in accordance with intuition,
+both the SEMD and RMSD are lower for the $\hat{fODF}$s obtained by tensor model than for the NNLS
+model when the true number of directions is one;
+and that conversely, when the true number of directions is greater
+than one, both the SEMD and RMSD are higher for the tensor model than
+for the NNLS model.
+
+For each $b$ value, we compute the area under the reciever operating
+characteristic curve (AUC) for the CV-RMSE and the CV-SEMD.
+The results are displayed in Figure \ref{fig:s3bar3}.
+We see that using the CV-RMSE results in an AUC of 1.
+That means that whenever the CV-RMSE for the tensor model is lower than the CV-RMSE
+for the NNLS model, the true number of directions is 1 in 100\% of the
+cases.
+However, using CV-SEMD results in a lower AUC.
+This is because the CV-SEMD is deceptively low for the tensor model.
+
+\begin{figure}[h]
+\hspace{-50pt}
+\includegraphics[scale=0.8]{figure_synthdata3_bar3.pdf}
+\caption{Using empirical errors for model selection}
+\label{fig:s3bar3}
+\end{figure}
+
+\subsection[CV-EMD underestimates]{CV-SEMD underestimates true SEMD}
+
+Figure \ref{fig:s3emnr} displays the true SEMD and CV-SEMD for both the
+tensor model fits and the NNLS fits.
+As indicated by the fact that most of the points fall below the
+diagonal dotted line, the CV-EMD is optimistic for the true SEMD.
+Figure \ref{fig:s3bar2} summarizes this information in the form of
+T-statistics.
+
+
+\newpage
+\begin{figure}[h]
+\hspace{-50pt}
+\includegraphics[scale=0.8]{figure_synthdata3_rmsd.pdf}
+\caption{Experiments on synthetic data (tensor model vs NNLS):
+  RMSD and $\hat{RMSE}$}
+\label{fig:s3rmsd}
+\end{figure}
+
+\newpage
+\begin{figure}[h]
+\hspace{-50pt}
+\includegraphics[scale=0.8]{figure_synthdata3_em.pdf}
+\caption{Experiments on synthetic data (tensor model vs NNLS):
+  EM and $\hat{EM}$}
+\label{fig:s3em}
+\end{figure}
+
+\newpage
+\begin{figure}[h]
+\hspace{-50pt}
+\includegraphics[scale=0.8]{figure_synthdata3_em_nonr.pdf}
+\caption{Experiments on synthetic data (tensor model vs NNLS):
+EM and $\hat{EM}$ (non-rotated)}
+\label{fig:s3emnr}
+\end{figure}
+
+\newpage
+\begin{figure}[h]
+\hspace{-50pt}
+\includegraphics[scale=0.8]{figure_synthdata3_bar1.pdf}
+\caption{Summary of tensor vs NNLS models, as measured by RMSD
+  and EM}
+\label{fig:s3bar1}
+\end{figure}
+
+\newpage
+\begin{figure}[h]
+\hspace{-50pt}
+\includegraphics[scale=0.8]{figure_synthdata3_bar2.pdf}
+\caption{Comparison of empirical and true error metrics}
+\label{fig:s3bar2}
+\end{figure}
+
+\newpage
+
+\subsection{CV-RMSE can be used to estimate $\kappa$}
+
+To be continued.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{figure_sim11_sigma0_05.pdf}
+\caption{Fitting different $\kappa$ to data}
+\label{fig:fitkappa}
+\end{figure}
+
+\bibliographystyle{abbrv}
+\bibliography{writeup}
+
+\end{document}
+
+
+
+The measure $RMSE$ (discussed in )
+can be interpreted as an approximation of a distance function $d_\kappa$ 
+between the true directions and weights
+$\{(v_1,w_1),\hdots,(v_\ell,w_\ell)\}$
+and the estimates
+$\{(\hat{v}_1,\hat{w}_1),\hdots,(\hat{v}_{\hat{\ell}},\hat{w}_{\hat{\ell}})\}$,
+defined by
+\[
+d_\kappa(\{(v_i,w_i)\}_{i=1}^\ell,\{(\hat{v}_i,\hat{w}_i\})_{i=1}^{\hat{\ell}})
+= \sqrt{\frac{1}{4\pi}\int_{S^2} \left[\sum_{i=1}^\ell w_i e^{-\kappa(v_i^T
+    x)^2}  -\sum_{j=1}^{\hat{\ell}} \hat{w}_j e^{-\kappa(\hat{v}_j^T
+    x)^2} \right]^2 dx} 
+\]
+Indeed, for $\theta_i$ dense and uniformly spaced on the sphere, $RMSD$
+converges to $B d_\kappa$.
+
+While $d_\kappa$ has the significant advantage that it can be
+estimated by $\hat{RMSE}$, it is less than ideal as an error metric
+for the underlying parameters $\{(v_1,w_1),\hdots,(v_\ell,w_\ell)\}$.
+For one, it depends on the parameter $\kappa=b(\lambda_1-\lambda_2)$,
+which is not entirely intrinsic to the objects being measured, but
+has some dependence on the choice of $b$ made by the experimenter.
+But more seriously, we will see later that $RMSD$ can be quite
+insensitive to descrepancies in the parameter space,
+even under ideal conditions. 
+
+The `standard' metric $d_\kappa$ manages to satisfy the first four
+conditions, but $d_\kappa$ fails to reduce to a simple form in the one
+direction case.  This is one consequence of the dependence of
+$d_\kappa$ on the parameter $\kappa$.
