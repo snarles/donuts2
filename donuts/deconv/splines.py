@@ -44,7 +44,7 @@ def genspline(bt,scale,shift): # generates a spline from coefficients
                 val0 += cf*e0
                 val1 += cf*e1
                 val2 += cf*e2
-        return val0,val1,val2
+        return val0,val1*scale,val2*(scale**2)
     return f
 
 def autospline(x,y): # generates a spline from uniform data
