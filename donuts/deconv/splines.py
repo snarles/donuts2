@@ -7,6 +7,8 @@ import numpy.random as npr
 import matplotlib.pyplot as plt
 import cvxopt as cvx
 
+cvx.solvers.options['show_progress'] = False
+
 def bs4d(z): # standard basis function with derivatives
     i1 = np.array((z >= 0) & (z < 1),dtype = float)
     i2 = np.array((z >= 1) & (z < 2),dtype = float)
