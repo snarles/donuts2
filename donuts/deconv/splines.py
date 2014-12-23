@@ -31,9 +31,15 @@ def bs4d(z): # standard basis function with derivatives
     val2= i1*e1+i2*e2+i3*e3+i4*e4
     return val0,val1,val2
 
-def genspline(bt,scale,shift): # generates a spline from coefficients
+def genspline(bt,scale,shift): # generates a spline from coefficients, extrapolating at endpoints
+    nmax = len(bt)
     def f(x): # only evaluates at a single point
-        z = scale*(x + shift) + 3
+        z1 = scale*(x + shift) + 3
+        z = z1
+        if z1 < 0:
+            z = 0
+        if z > nmax:
+            z = nmax
         h = np.floor(z)
         val0 = 0.0
         val1 = 0.0
@@ -46,7 +52,10 @@ def genspline(bt,scale,shift): # generates a spline from coefficients
                 val0 += cf*e0
                 val1 += cf*e1
                 val2 += cf*e2
-        return val0,val1*scale,val2*(scale**2)
+        ex0 = val0 + val1*(z1-z) + .5*(z1-z)**2
+        ex1 = val1 + val2*(z1-z)
+        ex2 = val2
+        return ex0,ex1,ex2
     return f
 
 def autospline(x,y): # generates a spline from uniform data
