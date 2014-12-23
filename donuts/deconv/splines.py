@@ -36,9 +36,9 @@ def genspline(bt,scale,shift): # generates a spline from coefficients, extrapola
     def f(x): # only evaluates at a single point
         z1 = scale*(x + shift) + 3
         z = z1
-        if z1 < 0:
-            z = 0
-        if z > nmax:
+        if z1 < 3.5:
+            z = 3.5
+        if z1 > nmax:
             z = nmax
         h = np.floor(z)
         val0 = 0.0
@@ -55,7 +55,7 @@ def genspline(bt,scale,shift): # generates a spline from coefficients, extrapola
         ex0 = val0 + val1*(z1-z) + .5*(z1-z)**2
         ex1 = val1 + val2*(z1-z)
         ex2 = val2
-        return ex0,ex1,ex2
+        return ex0,ex1*scale,ex2*(scale**2)
     return f
 
 def autospline(x,y): # generates a spline from uniform data
