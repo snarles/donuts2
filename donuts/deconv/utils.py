@@ -586,3 +586,61 @@ def best_combo_nnls(y,xss,grids):
         for jj in range(ii,K):
             gram0 = np.dot(xss[ii].T,xss[jj])
             
+def ordered_partitions(n,k):
+    if k==1:
+        return n*np.ones((1,1))
+    subparts = [0]*(n+1)
+    for ii in range(n+1):
+        temp = ordered_partitions(n-ii,k-1)
+        temp_p = np.shape(temp)[0]
+        subparts[ii] = np.hstack([ii*np.ones((temp_p,1)),temp])
+    return np.vstack(subparts)
+
+def geosphere(n):
+    # returns a 3x?? spherical design
+    # set up icosahedron
+    v = np.zeros((3,12))
+    v[:,0] = [0,0,1]
+    v[:,11] = [0,0,-1]
+    seq1 = 2.0*np.arange(1,6,1.0)*np.pi/5
+    seq2 = seq1 + np.pi/5
+    v[:,1:6] = 2.0/np.sqrt(5) * np.vstack([np.cos(seq1),np.sin(seq1),0.5*np.ones(5)])
+    v[:,6:11] = 2.0/np.sqrt(5) * np.vstack([np.cos(seq2),np.sin(seq2),-.5*np.ones(5)])
+    edges = [0]*30
+    for ii in range(5):
+        edges[ii] = (v[:,0],v[:,1+ii])
+        edges[2*(ii+1)+8] = (v[:,1+ii],v[:,6+ii])
+        edges[25+ii] = (v[:,11],v[:,6+ii])
+    for ii in range(4):
+        edges[ii+5] = (v[:,1+ii],v[:,2+ii])
+        edges[ii+20] = (v[:,6+ii],v[:,7+ii])
+        edges[2*(ii+1)+9] = (v[:,2+ii],v[:,6+ii])
+    edges[9] = (v[:,5],v[:,1])
+    edges[19] = (v[:,1],v[:,10])
+    edges[24] = (v[:,10],v[:,6])
+
+    faces = [0]*20
+    for ii in range(4):
+        faces[ii] = (v[:,0],v[:,1+ii],v[:,2+ii])
+        faces[15+ii] = (v[:,11],v[:,6+ii],v[:,7+ii])
+        faces[2*(ii+1)+3] = (v[:,1+ii],v[:,6+ii],v[:,2+ii])
+        faces[2*(ii+1)+4] = (v[:,6+ii],v[:,2+ii],v[:,7+ii])
+    faces[4] = (v[:,0],v[:,5],v[:,1])
+    faces[19] = (v[:,11],v[:,10],v[:,6])
+    faces[13] = (v[:,5],v[:,10],v[:,1])
+    faces[14] = (v[:,10],v[:,1],v[:,6])
+    # interpolate
+    v_final = [v]
+    pp = 12+30*(n-1)+10*(n-1)*(n-2)
+    if n > 1:
+        seq = np.arange(1,n,1.0)
+        mat = np.vstack([seq/n,1-(seq/n)])
+        v_edges = np.hstack([np.dot(np.vstack([x[0],x[1]]).T,mat) for x in edges])
+        v_final = v_final+[v_edges]
+    if n > 2:
+        mat2 = (1.0/n * (ordered_partitions(n-3,3)+1)).T
+        v_faces = np.hstack([np.dot(np.vstack([x[0],x[1],x[2]]).T,mat2) for x in faces])
+        v_final = v_final+[v_faces]
+    v_f = np.hstack(v_final)
+    v_norm = np.vstack([x/nla.norm(x) for x in v_f.T]).T
+    return v_norm
