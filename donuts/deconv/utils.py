@@ -597,7 +597,7 @@ def ordered_partitions(n,k):
     return np.vstack(subparts)
 
 def geosphere(n):
-    # returns a 3x?? spherical design
+    # returns a ??x3 spherical design
     # set up icosahedron
     v = np.zeros((3,12))
     v[:,0] = [0,0,1]
@@ -643,4 +643,4 @@ def geosphere(n):
         v_final = v_final+[v_faces]
     v_f = np.hstack(v_final)
     v_norm = np.vstack([x/nla.norm(x) for x in v_f.T]).T
-    return v_norm
+    return v_norm.T
