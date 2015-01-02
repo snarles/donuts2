@@ -1,162 +1,161 @@
+import os
 import numpy as np
 import scipy as sp
 import scipy.stats as spst
 import scipy.special as sps
 import numpy.random as npr
-
-def numderiv(f,x,delta):
-    return (f(x+delta)-f(x))/delta
+import matplotlib.pyplot as plt
+import numpy.random as npr
+import scipy.optimize as spo
+import donuts.deconv.splines as spl
 
 def numderiv2(f,x,delta):
     return (f(x+delta)+f(x-delta)-2*f(x))/(delta**2)
 
-def maxseq(f): # finds the max of a unimodal function
-    # find an upper bound
-    diff = 1
-    ub=1
-    eps=0.1
-    while diff > 0:
-        ub=2*ub
-        diff = f(ub*(1+eps))-f(ub)
-    # bisection search
-    lb=0
-    x = (ub+lb)/2.0
-    while (ub-lb)/ub > eps:
-        x = (ub+lb)/2.0
-        diff = f(x*(1+eps))-f(x)
-        if diff < 0:
-            ub = x
-        if diff >= 0:
-            lb = x
-    return x
+def numderiv(f,x,delta):
+    return (f(x+delta)-f(x))/delta
 
-def lbseq(f,x0,eps): # finds lower bound subject to precision
-    diff = x0/2
-    x = x0-diff
-    while abs(f(x0) - f(x)) > eps:
-        diff = diff/2
-        x = x0-diff
-    diff = diff*2
-    x = x0-diff
-    x = max([0,x])
-    x = np.floor(x)
-    return x
+def logivy(v,y):
+    y = np.atleast_1d(y)
+    ans = np.array(y)
+    ans[y < 500] = np.log(sps.iv(v,y[y < 500]))
+    ans[y >= 500] = y[y >= 500] - np.log(2*np.pi*y[y >= 500])
+    return ans
 
-def ubseq(f,x0,eps): # finds upper bound subject to precision
-    diff = (x0 + 100.0)**2
-    x=x0 + diff
-    while abs(f(x0) - f(x)) > eps:
-        diff = diff/2
-        x = x0+diff
-    diff = diff*2
-    x = x0+diff
-    x = np.floor(x)
-    x = max([x,np.floor(x0)+10.0])
-    return x
+def logncx2pdf_x(x,df,nc): #only x varies
+    if nc==0:
+        return spst.chi2.logpdf(x,df)
+    else:
+        return -np.log(2.0) -(x+nc)/2.0 + (df/4 - .5)*np.log(x/nc) + logivy((df/2-1),np.sqrt(nc*x))
 
-def boundseq(f,eps): # finds lower and upper bounds
-    x0=maxseq(f)
-    lb = lbseq(f,x0,eps)
-    ub = ubseq(f,x0,eps)
-    return lb,ub
+def logncx2pdf_nc(x,df,nc0): #only nc varies
+    nc0 =np.atleast_1d(nc0) 
+    nc = np.array(nc0)
+    nc[nc0 < 1e-5] = 1e-5
+    ans= -np.log(2.0) -(x+nc)/2.0 + (df/4 - .5)*np.log(x/nc) + logivy((df/2-1),np.sqrt(nc*x))
+    return ans
 
-def losssq(mu,x):
-    return [(mu-x)**2,2*(mu-x),2]
+def convex_nc_loss(x,df):
+    def ff(mu):
+        return -logncx2pdf_nc(x,df,mu**2)
+    def f2(mu):
+        return numderiv2(ff,mu,1e-3) - 1e-2
+    mugrid = np.arange(0.0,2*df,df*0.01)
+    res = np.where(f2(mugrid) < 1e-2)[0]
+    if len(res) > 0:
+        imin = np.where(f2(mugrid) < 1e-2)[0][-1]
+        muinf = mugrid[imin]
+    else:
+        muinf = 0.0
+    val = ff(muinf)
+    dval = numderiv(ff,muinf,1e-3)
+    d2val = 1e-2
+    #print(muinf)
+    def cff(mu):
+        mu = np.atleast_1d(mu)
+        ans = np.array(mu)
+        ans[mu > muinf] = -logncx2pdf_nc(x,df,mu[mu > muinf]**2)
+        ans[mu <= muinf] = val + (mu[mu <= muinf]-muinf)*dval + .5*d2val*(mu[mu <= muinf]-muinf)**2
+        return ans
+    return cff
 
-def logsumexp(xs):
-    xs = np.array(xs)
-    return max(xs) + np.log(sum(np.exp(xs-max(xs))))
+def pruneroutine(v1,v2):
+    # finds the minimum convex combination of v1 and v2 so that exactly one element is nonpositive (zero)
+    # v1 is nonnegative
+    v1 = np.atleast_1d(v1)
+    v2 = np.atleast_1d(v2)
+    assert min(v1)>=0
+    if min(v2) >=0:
+        return v2,-1
+    else:
+        mina = np.array(v2)*0
+        mina[v1 != v2]= -v1[v1 != v2]/(v2[v1 != v2]-v1[v1 != v2])
+        ans = (1-mina)*v1 + mina*v2
+        assert min(ans) >= -1e-15
+        mina[v2 >= 0] = 1e99
+        mina[v2==v1] = 1e99
+        a = min(mina)
+        assert a <= 1
+        assert a >= 0
+        o = np.where(mina == a)[0][0]
+        ans = (1-a)*v1 + a*v2
+        assert min(ans) >= -1e-15
+        ans[ans <0] =0
+        return ans,o
 
-def logsumdiff(x,y): # computes log(e^x - e^y) with sign
-    sgn = np.sign(x-y)
-    m = max([x,y])
-    ans = m + np.log(abs(np.exp(x-m)-np.exp(y-m)))
-    return sgn,ans
+def subrefitting(amat,ls,x0,newind): # refit x0 so that grad(x0)=0 where x0 positive
+    oldx0 = np.array(x0)
+    s = np.zeros(p,dtype=bool)
+    s[np.squeeze(x0) > 1e-20] = True
+    s[newind] = True
+    amat2 = amat[:,s]
+    x02 = np.array(x0[s])
+    x02 = bfgssolve(amat2,ls,np.array(x02),-1.0)[0]
+    oldx02 = np.array(x02)
+    x0[~s] = 0.0
+    x0[s]=x02
+    flag = min(x0) < 0
+    x0 = pruneroutine(oldx0,np.array(x0))[0]
+    while flag:
+        oldx0 = np.array(x0)
+        s = np.zeros(p,dtype=bool)
+        s[np.squeeze(x0) > 1e-20] = True
+        amat2 = amat[:,s]
+        x02 = np.array(x0[s])
+        x02 = bfgssolve(amat2,ls,np.array(x02),-1.0)[0]
+        x0[~s] = 0.0
+        x0[s]=x02
+        flag = min(x0) < 0
+        x0new = np.array(x0)
+        #print(min(x0))
+        x0 = pruneroutine(oldx0,np.array(x0))[0]
+    return x0
 
-def logncx2(n,nc,x):
-    ws = 200.0
-    eps = 30.0
-    if nc < 1e-20:
-        nc = 1e-20
-    a = n/2.0
-    temp0 = -(nc+x)/2.0 - a*np.log(2.0) + (a-1)*np.log(x)
-    
-    # adaptive choose sum indices
-    def f0(z):
-        return -sps.gammaln(a + z) + z*np.log(nc*x/4) - sps.gammaln(z+1)
-    lb,ub = boundseq(f0,eps)
-    iz0 = np.arange(lb,ub,1.0)
-    tempA = -sps.gammaln(a + iz0) + iz0*np.log(nc*x/4)
-    s0 = logsumexp(temp0+tempA - sps.gammaln(iz0+1))
-    
-    def f1(z):
-        return -sps.gammaln(a + z) + z*np.log(nc*x/4) - sps.gammaln(z+1) + np.log(z)
-    lb,ub = boundseq(f1,eps)
-    iz1 = np.arange(lb,ub,1.0)
-    tempB = -sps.gammaln(a + iz1) + iz1*np.log(nc*x/4)
-    s1 = logsumexp(temp0+tempB - sps.gammaln(iz1))
-    
-    def f2(z):
-        return -sps.gammaln(a + z) + z*np.log(nc*x/4) - sps.gammaln(z+1) + 2.0*np.log(z)
-    lb,ub = boundseq(f2,eps)
-    iz2 = np.arange(lb,ub,1.0)
-    tempC = -sps.gammaln(a + iz2) + iz2*np.log(nc*x/4)
-    s2 = logsumexp(temp0+tempC - sps.gammaln(iz2+1)+2*np.log(iz2))
-    
-    templ = np.log((nc**(-2.0) + nc**(-1.0)))
-    l0= s0 # log likelihood
-    sgnraw1,lraw1= logsumdiff(s1 - np.log(nc),s0-np.log(2.0)) # derivative of likelihood
-    l1= sgnraw1*np.exp(lraw1-l0) # first derivative of log likelihood
-    sub1 = logsumexp([-2.0*np.log(nc)+s2,np.log(.25)+s0])
-    sgnraw2,lraw2 = logsumdiff(sub1,templ+s1) # second derivative of likelihood
-    if sgnraw2 > 0:
-        sgn2,ll2 = logsumdiff(lraw2-l0, 2.0*(lraw1-l0))
-        l2 = sgn2*np.exp(ll2)
-    if sgnraw2 <= 0:
-        l2 = -1.0*np.exp(logsumexp([lraw2-l0, 2.0*(lraw1-l0)]))
-    return l0,l1,l2
-
-def logncx2prox(n,nc,x): # normal approximation
-    mm = n+nc
-    vv = 2*n + 4*nc
-    l0 = -.5*np.log(2*np.pi*vv) - .5*(x - mm)**2/vv
-    return l0
-
-def losschi2(n,mu,x):
-    nc = mu**2.0
-    l0,l1,l2 = logncx2(n,nc,x)
-    return -1.0*np.array([l0,2*mu*l1,2*l1 + ((2*mu)**2)*l2])
-
-def minchi2(n,mu0,x): # finds the min of chi2
-#    return 0
-#mu0 = ex
-#if True:
-    mu = mu0
-    for i in range(40):
-        res = losschi2(n,mu,x)
-        #print [res[0],mu]
-        mu = mu-res[1]/res[2]
-    return mu
-
-def inflchi2(n,mu0,x): # finds the inflection point of chi2
-    lb = 0
-    ub = mu0
-    for i in range(40):
-        mu = (lb+ub)/2
-        res = losschi2(n,mu,x)[2]
-        if res < 0:
-            lb = mu
-        if res >= 0:
-            ub = mu
-    return mu
-
-def genconvexchi2(n,x): # returns a function which is the convex relaxation of losschi2
-    mustar = minchi2(n,n/2.0,x)
-    muinf = inflchi2(n,mustar,x) + 0.01
-    res = losschi2(n,muinf,x)
-    def convloss(mu):
-        if mu > muinf:
-            return losschi2(n,mu,x)
+def ebp(amat,ls,x0): # ls is a list of loss functions, x0 is initial guess
+    x0seq = [np.array(x0)]
+    newind = np.where(x0==max(x0))[0]
+    p = np.shape(amat)[1]
+    flag = True
+    count = 0
+    while flag:
+        count = count + 1
+        # **** refitting step ****
+        x0 = subrefitting(amat,ls,np.array(x0),newind)
+        # next candidate step
+        yh = np.dot(amat,x0)
+        rawg = np.array([ls[i](yh[i])[1] for i in range(n)])
+        g = np.dot(rawg.T,amat)
+        if min(g) > -1e-5:
+            flag=False
         else:
-            return [res[0] + res[1]*(mu-muinf)+res[2]*(mu-muinf)**2,res[1] + res[2]*(mu-muinf),res[2]]
-    return convloss
+            newind = np.where(g==min(g))[0][0]
+        if count > 1000:
+            flag = False
+        x0seq = x0seq + [np.array(x0)]
+    return x0,x0seq
+
+def bfgssolve(amat,ls,x0,lb=0.0): # use LBFS-G to solve
+    def f(x0):
+        yh = np.dot(amat,x0)
+        return sum(np.array([ls[i](yh[i])[0] for i in range(len(yh))]))
+    def fprime(x0):
+        yh = np.dot(amat,x0)
+        rawg= np.array([ls[i](yh[i])[1] for i in range(len(yh))])
+        return np.dot(rawg.T,amat)
+    bounds = [(lb,100.0)] * len(x0)
+    res = spo.fmin_l_bfgs_b(f,np.squeeze(x0),fprime=fprime,bounds=bounds)
+    return res
+    
+
+def ncxlosses(df,y):
+    n = len(y)
+    ans = [0.] * n
+    for ii in range(n):
+        x = y[ii]
+        mmax = np.sqrt(x)*3
+        mugrid = np.arange(0,mmax,mmax/100)
+        clos = convex_nc_loss(n,x)
+        pts = clos(mugrid)
+        f = spl.convspline(mugrid,pts)
+        ans[ii]=f
+    return ans
