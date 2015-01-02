@@ -154,7 +154,7 @@ def ncxlosses(df,y):
         x = y[ii]
         mmax = np.sqrt(x)*3
         mugrid = np.arange(0,mmax,mmax/100)
-        clos = convex_nc_loss(n,x)
+        clos = convex_nc_loss(df,x)
         pts = clos(mugrid)
         f = spl.convspline(mugrid,pts)
         ans[ii]=f

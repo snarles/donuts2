@@ -136,7 +136,7 @@ def ste_tan_kappa(grid, bvecs):
     x = np.exp(-np.dot(grid, bvecs.T)**2).T
     return x
 
-def simulate_signal_kappa(fibers, weights, bvecs, sigma):
+def simulate_signal_kappa(fibers, weights, bvecs, sigma, df=2):
     """ Simulates (Rician) noisy and noiseless signal from a voxel
         with fiber directions specified by fibers,
         fiber kappas specified by root-norm of fibers,
@@ -151,6 +151,7 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma):
     bvecs: N x 3 numpy array of unit vectors
       corresponding to DWI measurement directions
     sigma: noise level
+    df: degrees of freedom
     
     Returns
     -------
@@ -160,7 +161,7 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma):
     x = ste_tan_kappa(fibers, bvecs)
     n = np.shape(bvecs)[0]
     y0 = np.dot(x,weights)
-    raw_err = sigma*np.random.normal(0,1,(n,2))
+    raw_err = sigma*np.random.normal(0,1,(n,df))
     raw_err[:,0] = raw_err[:,0] + np.squeeze(y0)
     y1 = norms(raw_err).reshape(-1,1)
     return y0,y1
