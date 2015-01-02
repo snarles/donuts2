@@ -150,12 +150,14 @@ def bfgssolve(amat,ls,x0,lb=0.0): # use LBFS-G to solve
 def ncxlosses(df,y):
     n = len(y)
     ans = [0.] * n
+    ptss = [0.]*n
     for ii in range(n):
         x = y[ii]
-        mmax = np.sqrt(x)*3
-        mugrid = np.arange(0,mmax,mmax/100)
+        mmax = np.sqrt(x)*2
+        mugrid = np.arange(mmax/100,mmax,mmax/100)
         clos = convex_nc_loss(df,x)
         pts = clos(mugrid)
-        f = spl.convspline(mugrid,pts)
-        ans[ii]=f
+        mugrid = mugrid[pts < 1e99]
+        pts = pts[pts < 1e99]
+        ans[ii] = spl.convspline(mugrid,pts)
     return ans
