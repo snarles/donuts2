@@ -20,6 +20,14 @@ def column(x):
 def numderiv(f,x,delta):
     return (f(x+delta)-f(x))/delta
 
+def mean_ncx(df,nc0,sigma=1.0): # approximate mean
+    nc = nc0/sigma
+    mu = nc0+df
+    mu = df + nc
+    sig2 = 2*df + 4*nc
+    the_mean = np.sqrt(mu) - sig2/(8* np.power(mu,1.5))
+    return the_mean*sigma
+
 def ncxloss_gauss(x,df): # gaussian approximation to -ncx log likelihood
     def ff(mu):
         nc = mu**2

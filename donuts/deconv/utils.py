@@ -5,7 +5,6 @@ import scipy.optimize as spo
 import scipy.spatial.distance as dist
 import donuts.emd as emd
 
-
 from numpy.linalg import lapack_lite
 lapack_routine = lapack_lite.dgesv
 def faster_inverse(A):
@@ -28,6 +27,16 @@ def faster_inverse(A):
         return b
 
     return np.array([lapack_inverse(a) for a in A])
+
+def scalarize(x):
+    x = np.atleast_1d(x)
+    if len(x)==1:
+        return x[0]
+    else:
+        return x
+    
+def column(x):
+    return np.reshape(x,(-1,1))
 
 def rank_simple(vector):
     return sorted(range(len(vector)), key=vector.__getitem__)
