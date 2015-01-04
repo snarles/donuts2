@@ -63,16 +63,17 @@ def test_normalize_rows():
     npt.assert_almost_equal(sum(a[1,]**2),1)
 
 def test_ste_tan_kappa():
+    bvecs1=du.normalize_rows(npr.normal(0,1,(1000,3)))
     def subroutine(kappa):
         vs = du.normalize_rows(npr.normal(0,1,(10,3)))
-        bvecs = np.sqrt(kappa) * du.normalize_rows(npr.normal(0,1,(1000,3)))
+        bvecs = np.sqrt(kappa) * bvecs1
         amat = du.ste_tan_kappa(vs,bvecs)
         mus = np.array([np.mean(a) for a in amat.T])
         stds = np.array([np.std(a) for a in amat.T])
         assert np.std(mus) < 0.1
         assert np.std(stds) < 0.1
         return np.mean(mus)
-    kappas = np.arange(0.1,3,0.1)
+    kappas = np.arange(0.1,3,0.2)
     muss = np.array([subroutine(kappa) for kappa in kappas])
     npt.assert_almost_equal(du.rank_simple(-muss),range(len(muss)))
 
@@ -104,9 +105,9 @@ def test_simulate_signal_kappa():
             if (count >= 10) and (max(abs(mu)) < 1e-2) and (max(abs(vr - sigma**2)) < 1e-4) and \
             (max(abs(skw)) < 1e-5) and (max(abs(mu+y0-pred_mu)*y0) < 1e-2):
                 flag=False
-            assert count < 100
-        if count > 70:
-            print("test_simulate_signal_kappa (part I) " + str(count) + " / 70 trials needed (kappa="+str(true_kappa)+")")
+            assert count < 120
+        if count > 90:
+            print("test_simulate_signal_kappa (part I) " + str(count) + " / 90 trials needed (kappa="+str(true_kappa)+")")
     # part II. test for large sigma
     for ii in range(10):
         true_kappa = abs(npr.normal(2,1,1))[0]
@@ -201,7 +202,7 @@ def test_geosphere():
             return np.mean(y1)
         mus1 = np.array([subroutine1() for ii in range(20)])
         mus0 = np.array([subroutine0() for ii in range(20)])
-        record[iii] = (np.std(mus1)/np.mean(mus1) < .3*np.std(mus0)/np.mean(mus0))
+        record[iii] = (np.std(mus1)/np.mean(mus1) < .5*np.std(mus0)/np.mean(mus0))
     assert sum(record) > 5
     if sum(record) < 10:
         print("test_geosphere(" + str(ksph) + "), success: "+str(sum(record))+"/10")
