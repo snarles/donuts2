@@ -299,3 +299,89 @@ def test_convspline():
 # -----------------
 # donuts.deconv.ncx
 # -----------------
+
+def test_numderiv():
+    def f(x):
+        return x**2
+    x = np.arange(-5,5,0.1)
+    npt.assert_almost_equal(2*x,ncx.numderiv(f,x,1e-3),decimal=3)
+    return
+def test_numderiv2():
+    def f(x):
+        return x**2
+    x = np.arange(-5,5,0.1)
+    npt.assert_almost_equal(2+0*x,ncx.numderiv2(f,x,1e-3),decimal=3)
+    return
+
+def test_mean_ncx():
+    for ii in range(5):
+        df = npr.randint(2,20)
+        mu = npr.uniform(0,10)
+        x = spst.ncx2.rvs(df,mu**2,size=1e6)
+        npt.assert_almost_equal(mu*np.mean(np.sqrt(x)),mu*ncx.mean_ncx(df,mu),decimal=1)
+    return
+
+def test_ncxloss_gauss():
+    # demonstrate approximation to true loss function
+    def subroutine(df,mu0):
+        x = spst.ncx2.rvs(df,mu0**2)
+        mus = np.arange(-2*mu0,2*mu0,mu0*0.1)
+        f0 = ncx.ncxloss_true(x,df)
+        f = ncx.ncxloss_gauss(x,df)
+        y0= f0(mus)[0]
+        y = f(mus)[0]
+        return spst.pearsonr(y,y0)[0]
+    # moderate accuracy for small arguments
+    reps = 50
+    pars = zip(npr.randint(2,20,size=reps),npr.uniform(1,10,size=reps))
+    rs= np.array([subroutine(df,mu0) for (df,mu0) in pars])
+    assert sum(rs < .6) < 10
+    # high accuracy for large arguments
+    df = npr.randint(5,10)
+    x = npr.uniform(70,100)
+    mus = np.arange(30,70,1.0)
+    f0 = ncx.ncxloss_true(x,df)
+    f = ncx.ncxloss_gauss(x,df)
+    y0= f0(mus)[0]
+    y = f(mus)[0]
+    npt.assert_almost_equal(spst.pearsonr(y,y0)[0],1,decimal=3)
+    # demonstrate asymptotic consistency
+    df = npr.randint(5,20)
+    mu0 = npr.uniform(20,50)
+    x = spst.ncx2.rvs(df,mu0**2,size=1e4)
+    ls = [ncx.ncxloss_gauss(xx,df) for xx in x]
+    def likelihood(mu):
+        return sum(np.array([ll(mu)[0] for ll in ls]))
+    lk0 = likelihood(mu0)
+    assert lk0 < likelihood(mu0 * .5)
+    assert lk0 < likelihood(mu0 * 1.01)
+    assert lk0 < likelihood(mu0 * 0.99)
+    assert lk0 < likelihood(mu0 * 2)
+    assert lk0 < likelihood(mu0 * npr.uniform(1e-2,100))
+    return
+
+def test_ncxloss_mean():
+    # demonstrate asymptotic consistency
+    df = npr.randint(5,20)
+    mu0 = npr.uniform(20,50)
+    x = spst.ncx2.rvs(df,mu0**2,size=1e5)
+    ls = [ncx.ncxloss_mean(xx,df) for xx in x]
+    def likelihood(mu):
+        return sum(np.array([ll(mu)[0] for ll in ls]))
+    lk0 = likelihood(mu0)
+    assert lk0 < likelihood(mu0 * 1.1)
+    assert lk0 < likelihood(mu0 * 0.9)
+    return
+
+def test_ncxloss_true():
+    # demonstrate asymptotic consistency
+    df = npr.randint(2,4)
+    mu0 = npr.uniform(0,2)
+    x = spst.ncx2.rvs(df,mu0**2,size=1e3)
+    ls = [ncx.ncxloss_true(xx,df) for xx in x]
+    def likelihood(mu):
+        return sum(np.array([ll(mu)[0] for ll in ls]))
+    lk0 = likelihood(mu0)
+    assert lk0 < likelihood(mu0 * .5)
+    assert lk0 < likelihood(mu0 * 2)
+    return
