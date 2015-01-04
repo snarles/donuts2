@@ -9,6 +9,7 @@ import cvxopt as cvx
 
 cvx.solvers.options['show_progress'] = False
 
+# test written
 def bs4d(z): 
     """a spline basis function and its derivatives
     

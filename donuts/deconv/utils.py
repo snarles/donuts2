@@ -254,11 +254,8 @@ def arcdist(xx,yy):
     dd: a x b numpy array
     """
     dm = np.absolute(np.dot(xx,yy.T))
-    val1s = (dm==1)
-    dm[val1s] = 0.999
+    dm[dm > .99999999999999999] = .99999999999999999
     dd = np.arccos(dm)
-    dd[val1s] = 0
-    #dd = np.nan_to_num(dd)
     return dd
 
 # test written

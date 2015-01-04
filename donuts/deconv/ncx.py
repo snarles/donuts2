@@ -55,6 +55,22 @@ def numderiv(f,x,delta):
     """
     return (f(x+delta)-f(x))/delta
 
+def numderiv2(f,x,delta):
+    """ Utility function: computes a numerical second derivative
+
+    Parameters
+    ----------
+    f : function with one argument
+    x: scalar or np array, points to evaluate f'
+    delta: small number 
+
+    Returns
+    -------
+    ans: np array
+
+    """
+    return (f(x+delta)+f(x-delta)-2*f(x))/(delta**2)
+
 def mean_ncx(df,mu0,sigma=1.0):
     """ Approx. mean of a noncentral chi variable
         the norm of N(mu, sigma^2 I_df)
