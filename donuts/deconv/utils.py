@@ -6,6 +6,7 @@ import scipy.spatial.distance as dist
 import scipy.stats as spst
 import donuts.emd as emd
 
+# test written
 def scalarize(x):
     """ Utility function: converts a np array or scalar to scalar if len==1
 
@@ -23,7 +24,8 @@ def scalarize(x):
         return x[0]
     else:
         return x
-    
+
+# test written    
 def column(x):
     """ Utility function: converts a np array to column vector
 
@@ -36,8 +38,9 @@ def column(x):
     x : np array, column vector
 
     """
-    return np.reshape(x,(-1,1))
+    return np.reshape(np.array(x),(-1,1))
 
+# test written
 def rank_simple(vector):
     """ Utility function: returns ranks of a vector
 
@@ -52,6 +55,7 @@ def rank_simple(vector):
     """
     return sorted(range(len(vector)), key=vector.__getitem__)
 
+# test written
 def fullfact(levels):
     """ Creates a full factorial design matrix
 
@@ -72,6 +76,7 @@ def fullfact(levels):
             x = np.hstack([x2,x4])
     return x
 
+# test written
 def inds_fullfact(levels, col_inds, values):
     """ Returns a list of indices for which fullfact(levels)[inds, col_inds[i]] = values[i]
 
@@ -102,6 +107,7 @@ def inds_fullfact(levels, col_inds, values):
         tracker = tracker-1
     return cur_arr
 
+# test written
 def ordered_partitions(n,k):
     """ Forms all k-length nonnegative integer partitions of n (where ordering matters)
 
@@ -124,12 +130,13 @@ def ordered_partitions(n,k):
         subparts[ii] = np.hstack([ii*np.ones((temp_p,1)),temp])
     return np.vstack(subparts)
 
-
+# skipped test
 def norms(x) :
     """ computes the norms of the rows of x """
     nms = np.sum(np.abs(x)**2,axis=-1)**(1./2)
     return nms
 
+# test written
 def normalize_rows(x):
     """ normalizes the rows of x """
     n = np.shape(x)[0]
@@ -137,7 +144,8 @@ def normalize_rows(x):
     nms = norms(x).reshape(-1,1)
     x = np.multiply(x, 1./np.tile(nms,(1,p)))
     return x
-    
+
+# test written    
 def ste_tan_kappa(grid, bvecs):
     """ Generates the Steksjal-Tanner signal
         for fibers oriented with directions and kappa determined by
@@ -158,6 +166,7 @@ def ste_tan_kappa(grid, bvecs):
     x = np.exp(-np.dot(grid, bvecs.T)**2).T
     return x
 
+# test written
 def simulate_signal_kappa(fibers, weights, bvecs, sigma, df=2):
     """ Simulates (Rician) noisy and noiseless signal from a voxel
         with fiber directions specified by fibers,
@@ -188,53 +197,14 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma, df=2):
     y1 = np.sqrt(y1sq)*sigma
     return column(y0),column(y1)
 
-def arc_emd(true_pos,true_w,est_pos,est_w):
-    """ Computes the EMD between two unit length fODFS using arc-length distance
-
-    Parameters
-    ----------
-    true_pos : K1 x 3 numpy array, ground truth set of directions,
-               where each direction is weighted by the square root of its estimated kappa
-    true_w   : K1 x 1 numpy array, weights of each fiber.  These will be normalized automatically to sum to 1
-    est_pos  : K2 x 3 numpy array, estimated set of directions,
-               where each direction is weighted by the square root of its estimated kappa
-    est_w    : K1 x 1 numpy array, estimated weights of each fiber.  These will be normalized to sum to 1
-    
-    Outputs
-    -------
-    ee       : Earthmover distance, a number from 0 to pi/2
-    """
-    true_pos = normalize_rows(true_pos)
-    est_pos = normalize_rows(est_pos)
-    true_w = true_w/sum(true_w)
-    est_w = est_w/sum(est_w)
-    dm = arcdist(true_pos,est_pos).ravel()
-    ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
-    return ee
-
+# test written
 def rand_ortho(k):
     """ returns a random orthogonal matrix of size k x k """
     a = np.random.normal(0,1,(k,k))
     u, s, v = nla.svd(a)
     return u
 
-
-def arcdist(xx,yy):
-    """ Computes pairwise arc-distance matrix
-
-    Parameters
-    ----------
-    xx : a x 3 numpy array
-    yy : b x 3 numpy array
-
-    Outputs
-    -------
-    dd: a x b numpy array
-    """
-    dd = np.arccos(np.absolute(np.dot(xx,yy.T)))
-    dd = np.nan_to_num(dd)
-    return dd
-
+# test written
 def randvecsgap(k,gap):
     """ generates k random unit vectors with minimum arc length gap
 
@@ -270,6 +240,53 @@ def randvecsgap(k,gap):
             idxs[idx] = True
     return ans            
 
+# test written
+def arcdist(xx,yy):
+    """ Computes pairwise arc-distance matrix
+
+    Parameters
+    ----------
+    xx : a x 3 numpy array
+    yy : b x 3 numpy array
+
+    Outputs
+    -------
+    dd: a x b numpy array
+    """
+    dm = np.absolute(np.dot(xx,yy.T))
+    val1s = (dm==1)
+    dm[val1s] = 0.999
+    dd = np.arccos(dm)
+    dd[val1s] = 0
+    #dd = np.nan_to_num(dd)
+    return dd
+
+# test written
+def arc_emd(true_pos,true_w,est_pos,est_w):
+    """ Computes the EMD between two unit length fODFS using arc-length distance
+
+    Parameters
+    ----------
+    true_pos : K1 x 3 numpy array, ground truth set of directions,
+               where each direction is weighted by the square root of its estimated kappa
+    true_w   : K1 x 1 numpy array, weights of each fiber.  These will be normalized automatically to sum to 1
+    est_pos  : K2 x 3 numpy array, estimated set of directions,
+               where each direction is weighted by the square root of its estimated kappa
+    est_w    : K1 x 1 numpy array, estimated weights of each fiber.  These will be normalized to sum to 1
+    
+    Outputs
+    -------
+    ee       : Earthmover distance, a number from 0 to pi/2
+    """
+    true_pos = normalize_rows(true_pos)
+    est_pos = normalize_rows(est_pos)
+    true_w = true_w/sum(true_w)
+    est_w = est_w/sum(est_w)
+    dm = arcdist(true_pos,est_pos).ravel()
+    ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
+    return ee
+
+# test written
 def geosphere(n):
     """ returns a ??x3 spherical design
 

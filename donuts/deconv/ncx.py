@@ -55,7 +55,7 @@ def numderiv(f,x,delta):
     """
     return (f(x+delta)-f(x))/delta
 
-def mean_ncx(df,mu,sigma=1.0):
+def mean_ncx(df,mu0,sigma=1.0):
     """ Approx. mean of a noncentral chi variable
         the norm of N(mu, sigma^2 I_df)
         (the square root of an ncx2 variable)
@@ -71,8 +71,7 @@ def mean_ncx(df,mu,sigma=1.0):
     ans: expected norm of the multivariate normal
 
     """
-    nc = nc0/sigma
-    mu = nc0+df
+    nc = (mu0/sigma)**2
     mu = df + nc
     sig2 = 2*df + 4*nc
     the_mean = np.sqrt(mu) - sig2/(8* np.power(mu,1.5))
