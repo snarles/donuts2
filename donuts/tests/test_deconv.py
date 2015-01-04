@@ -210,7 +210,7 @@ def test_geosphere():
 # donuts.deconv.splines
 # ---------------------
 
-def test b4sd():
+def test_b4sd():
     x = np.arange(-2,6,0.01)
     y = spl.bs4d(x)
     def f(x):
@@ -294,3 +294,7 @@ def test_convspline():
         p2 = npr.normal(0,1000)
         assert f((p1+p2)/2.0)[0] < (f(p1)[0]+f(p2)[0])/2.0
     return
+
+# -----------------
+# donuts.deconv.ncx
+# -----------------

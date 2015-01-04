@@ -45,6 +45,7 @@ def bs4d(z):
     val2= i1*e1+i2*e2+i3*e3+i4*e4
     return val0,val1,val2
 
+# test written
 def genspline(bt,scale,shift): 
     """ generates a spline from coefficients, extrapolating at endpoints
 
@@ -88,6 +89,7 @@ def genspline(bt,scale,shift):
         return ex0,ex1*scale,ex2*(scale**2)
     return f
 
+# test written
 def autospline(x,y):
     """ generates a spline which approximates a given function, extrapolating at endpoints
         inputs are function evals on a uniform grid
@@ -114,6 +116,7 @@ def autospline(x,y):
     bt = np.dot(splinecoef(nn),y)
     return genspline(bt,scale,shift)
 
+# test written
 def convspline(x,y):
     """ generates a convex spline which approximates a given function, extrapolating at endpoints
         inputs are function evals on a uniform grid
@@ -144,18 +147,21 @@ def convspline(x,y):
     bt = np.squeeze(sol['x'])
     return genspline(bt,scale,shift)
 
+# test written
 def splinemat(m):
     """ Utility function, spline matrix"""
     n = m+1
     mat= np.diag(1.* np.ones(n+2)) + np.diag(4.*np.ones(n+1),1) + np.diag(1.* np.ones(n),2)
     return mat[:(n-1),:(n+1)]
 
+# test written
 def splinemat2(m):
     """ Utility function, spline second derivative matrix"""
     n = m+1
     mat= np.diag(6.* np.ones(n+2)) + np.diag(-12.*np.ones(n+1),1) + np.diag(6.* np.ones(n),2)
     return mat[:(n-1),:(n+1)]
 
+# test written
 def splinecoef(m):
     """ Utility function, fits coefficients for spline"""
     return npl.pinv(splinemat(m))
