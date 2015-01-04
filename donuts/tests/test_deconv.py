@@ -325,7 +325,7 @@ def test_ncxloss_gauss():
     # demonstrate approximation to true loss function
     def subroutine(df,mu0):
         x = spst.ncx2.rvs(df,mu0**2)
-        mus = np.arange(-2*mu0,2*mu0,mu0*0.1)
+        mus = np.arange(mu0*0.1,2*mu0,mu0*0.1)
         f0 = ncx.ncxloss_true(x,df)
         f = ncx.ncxloss_gauss(x,df)
         y0= f0(mus)[0]
@@ -335,7 +335,7 @@ def test_ncxloss_gauss():
     reps = 50
     pars = zip(npr.randint(2,20,size=reps),npr.uniform(1,10,size=reps))
     rs= np.array([subroutine(df,mu0) for (df,mu0) in pars])
-    assert sum(rs < .6) < 10
+    assert sum(rs < .5) < 10
     # high accuracy for large arguments
     df = npr.randint(5,10)
     x = npr.uniform(70,100)
@@ -345,6 +345,10 @@ def test_ncxloss_gauss():
     y0= f0(mus)[0]
     y = f(mus)[0]
     npt.assert_almost_equal(spst.pearsonr(y,y0)[0],1,decimal=3)
+    # test derivatives
+    def fval(x):
+        return f(x)[0]
+    npt.assert_almost_equal(f(mus)[1],ncx.numderiv(fval,mus,1e-3),decimal=3)
     # demonstrate asymptotic consistency
     df = npr.randint(5,20)
     mu0 = npr.uniform(20,50)
@@ -361,7 +365,7 @@ def test_ncxloss_gauss():
     return
 
 def test_ncxloss_mean():
-    # demonstrate asymptotic consistency
+        # demonstrate asymptotic consistency
     df = npr.randint(5,20)
     mu0 = npr.uniform(20,50)
     x = spst.ncx2.rvs(df,mu0**2,size=1e5)
@@ -371,6 +375,12 @@ def test_ncxloss_mean():
     lk0 = likelihood(mu0)
     assert lk0 < likelihood(mu0 * 1.1)
     assert lk0 < likelihood(mu0 * 0.9)
+    # test derivatives
+    f = ls(0)
+    mus = np.arange(0.1,2.0,0.1)*mu0
+    def fval(x):
+        return f(x)[0]
+    npt.assert_almost_equal(f(mus)[1],ncx.numderiv(fval,mus,1e-3),decimal=3)
     return
 
 def test_ncxloss_true():

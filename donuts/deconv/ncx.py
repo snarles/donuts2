@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy.random as npr
 import scipy.optimize as spo
 
+# tested in du
 def scalarize(x):
     """ Utility function: converts a np array or scalar to scalar if len==1
 
@@ -24,7 +25,8 @@ def scalarize(x):
         return x[0]
     else:
         return x
-    
+
+# tested in du    
 def column(x):
     """ Utility function: converts a np array to column vector
 
@@ -39,6 +41,7 @@ def column(x):
     """
     return np.reshape(x,(-1,1))
 
+# test written
 def numderiv(f,x,delta):
     """ Utility function: computes a numerical derivative
 
@@ -55,6 +58,7 @@ def numderiv(f,x,delta):
     """
     return (f(x+delta)-f(x))/delta
 
+# test written
 def numderiv2(f,x,delta):
     """ Utility function: computes a numerical second derivative
 
@@ -71,6 +75,7 @@ def numderiv2(f,x,delta):
     """
     return (f(x+delta)+f(x-delta)-2*f(x))/(delta**2)
 
+# test written
 def mean_ncx(df,mu0,sigma=1.0):
     """ Approx. mean of a noncentral chi variable
         the norm of N(mu, sigma^2 I_df)
@@ -93,6 +98,7 @@ def mean_ncx(df,mu0,sigma=1.0):
     the_mean = np.sqrt(mu) - sig2/(8* np.power(mu,1.5))
     return the_mean*sigma
 
+# test written
 def ncxloss_gauss(x,df): 
     """gaussian approximation to -ncx log likelihood
     
@@ -116,6 +122,7 @@ def ncxloss_gauss(x,df):
         return val,der
     return ff
 
+# test written
 def ncxloss_mean(x,df):
     """gaussian approximation to -ncx log likelihood without variance term
     
@@ -139,6 +146,7 @@ def ncxloss_mean(x,df):
         return val,der
     return ff
 
+# test written
 def ncxloss_true(x,df): 
     """ true ncx loss calculated using spst
         Warning: fails for large and small values
@@ -169,4 +177,6 @@ def ncxloss_true(x,df):
         der = 2*mu*ncx2der
         return scalarize(val),scalarize(der)
     return ff
+
+
 
