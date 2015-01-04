@@ -9,7 +9,20 @@ import cvxopt as cvx
 
 cvx.solvers.options['show_progress'] = False
 
-def bs4d(z): # standard basis function with derivatives
+def bs4d(z): 
+    """a spline basis function and its derivatives
+    
+    Parameters:
+    -----------
+    z: scalar or np array. the function vanishes outside of [0,4]
+
+    Outputs:
+    --------
+    val0: function value at z
+    val1: derivative
+    val2: second derivative
+    """
+    z=np.atleast_1d(z)
     i1 = np.array((z >= 0) & (z < 1),dtype = float)
     i2 = np.array((z >= 1) & (z < 2),dtype = float)
     i3 = np.array((z >= 2) & (z < 3),dtype = float)
@@ -31,7 +44,23 @@ def bs4d(z): # standard basis function with derivatives
     val2= i1*e1+i2*e2+i3*e3+i4*e4
     return val0,val1,val2
 
-def genspline(bt,scale,shift): # generates a spline from coefficients, extrapolating at endpoints
+def genspline(bt,scale,shift): 
+    """ generates a spline from coefficients, extrapolating at endpoints
+
+    Parameters:
+    -----------
+    bt: list of spline coefficients
+    scale: input scaling
+    shift: input shifting
+
+    Outputs:
+    --------
+    f: the function defined by spline coefficients
+       Inputs:  x, scalar
+       Outputs: val0: function value at x
+                val1: derivative
+                val2: second derivative
+    """
     nmax = len(bt)
     def f(x): # only evaluates at a single point
         z1 = scale*(x + shift) + 3
@@ -58,7 +87,24 @@ def genspline(bt,scale,shift): # generates a spline from coefficients, extrapola
         return ex0,ex1*scale,ex2*(scale**2)
     return f
 
-def autospline(x,y): # generates a spline from uniform data
+def autospline(x,y):
+    """ generates a spline which approximates a given function, extrapolating at endpoints
+        inputs are function evals on a uniform grid
+
+    Parameters:
+    -----------
+    x: points where function wsa evaluated
+    y: function values at points
+
+    Outputs:
+    --------
+    f: the function defined by spline coefficients
+       Inputs:  x, scalar
+       Outputs: val0: function value at x
+                val1: derivative
+                val2: second derivative
+    """
+
     mmax = max(x)
     mmin = min(x)
     nn = len(x)
@@ -67,7 +113,23 @@ def autospline(x,y): # generates a spline from uniform data
     bt = np.dot(splinecoef(nn),y)
     return genspline(bt,scale,shift)
 
-def convspline(x,y): # generates a convex spline
+def convspline(x,y):
+    """ generates a convex spline which approximates a given function, extrapolating at endpoints
+        inputs are function evals on a uniform grid
+
+    Parameters:
+    -----------
+    x: points where function wsa evaluated
+    y: function values at points
+
+    Outputs:
+    --------
+    f: the function defined by spline coefficients
+       Inputs:  x, scalar
+       Outputs: val0: function value at x
+                val1: derivative
+                val2: second derivative
+    """
     m=len(x)
     mmax = max(x)
     mmin = min(x)
@@ -82,14 +144,17 @@ def convspline(x,y): # generates a convex spline
     return genspline(bt,scale,shift)
 
 def splinemat(m):
+    """ Utility function, spline matrix"""
     n = m+1
     mat= np.diag(1.* np.ones(n+2)) + np.diag(4.*np.ones(n+1),1) + np.diag(1.* np.ones(n),2)
     return mat[:(n-1),:(n+1)]
 
 def splinemat2(m):
+    """ Utility function, spline second derivative matrix"""
     n = m+1
     mat= np.diag(6.* np.ones(n+2)) + np.diag(-12.*np.ones(n+1),1) + np.diag(6.* np.ones(n),2)
     return mat[:(n-1),:(n+1)]
 
 def splinecoef(m):
+    """ Utility function, fits coefficients for spline"""
     return npl.pinv(splinemat(m))
