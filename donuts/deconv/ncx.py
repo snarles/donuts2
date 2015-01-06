@@ -200,9 +200,9 @@ def rvs_ncx2(df,mu,sz=1,sigma = 1.0):
     """
     mu = np.atleast_1d(mu)
     if len(mu) ==1:
-        ans = (mu*np.ones(sz) + npr.normal(0,sigma,sz))**2 + (sigma**2)*spst.chi2.rvs(df-1,size=sz)
+        ans = (mu*np.ones(sz) + sigma*npr.normal(0,1,sz))**2 + (sigma**2)*spst.chi2.rvs(df-1,size=sz)
         return ans
     else:
-        ans = (np.squeeze(mu) + npr.normal(0,sigma,len(mu)))**2 + (sigma**2)*spst.chi2.rvs(df-1,size=len(mu))
+        ans = (np.squeeze(mu) + sigma*npr.normal(0,1,len(mu)))**2 + (sigma**2)*spst.chi2.rvs(df-1,size=len(mu))
         return ans
 
