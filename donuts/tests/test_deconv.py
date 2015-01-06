@@ -352,8 +352,9 @@ def test_ncxloss_gauss():
     # demonstrate asymptotic consistency
     df = npr.randint(5,20)
     mu0 = npr.uniform(20,50)
-    x = spst.ncx2.rvs(df,mu0**2,size=1e4)
-    ls = [ncx.ncxloss_gauss(xx,df) for xx in x]
+    sigma = npr.uniform(.5,2.0)
+    x = ncx.rvs_ncx2(df,mu0,1e4,sigma)
+    ls = [ncx.ncxloss_gauss(xx,df,sigma) for xx in x]
     def likelihood(mu):
         return sum(np.array([ll(mu)[0] for ll in ls]))
     lk0 = likelihood(mu0)
@@ -394,4 +395,15 @@ def test_ncxloss_true():
     lk0 = likelihood(mu0)
     assert lk0 < likelihood(mu0 * .5)
     assert lk0 < likelihood(mu0 * 2)
+    return
+
+def test_rvs_ncx2():
+    for ii in range(10):
+        df = npr.randint(1,100)
+        sigma = npr.uniform(.1,3)
+        mu = npr.uniform(0,10)
+        x = ncx.rvs_ncx2(df,mu,1000000,sigma)
+        #x = sigma*spst.ncx2.rvs(df,(mu/sigma)**2,size = 100000)
+        npt.assert_almost_equal(np.mean(x)/(mu**2 + (sigma**2)*df),1,decimal=2)
+        npt.assert_almost_equal(np.var(x)/(4*(sigma**2)*mu**2 + 2*(sigma**4)*df),1,decimal=2)
     return

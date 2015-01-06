@@ -99,13 +99,14 @@ def mean_ncx(df,mu0,sigma=1.0):
     return the_mean*sigma
 
 # test written
-def ncxloss_gauss(x,df): 
+def ncxloss_gauss(x,df,sigma=1.0): 
     """gaussian approximation to -ncx log likelihood
     
     Parameters:
     -----------
     x: observed value of X in data, a noncentral chi squared variable
     df: known degrees of freedom of X
+    sigma: noise level
 
     Output:
     -------
@@ -114,10 +115,12 @@ def ncxloss_gauss(x,df):
          Outputs: val, negative log likelihood of mu
                   der, derivative with respect to mu
     """
+    s2 = sigma**2
+    s4 = sigma**4
     def ff(mu):
         nc = mu**2
-        val= .5*np.log(2*np.pi*(2*df+4*nc)) + (nc+df-x)**2/(4*df+8*nc)
-        ncx2der= 1/(df + 2*nc) + 2*(nc + df-x)/(4*df + 8*nc) - 8*((nc+df-x)/(4*df+8*nc))**2
+        val= .5*np.log(2*np.pi*(2*s4*df+4*s2*nc)) + (nc+s2*df-x)**2/(4*s4*df+8*s2*nc)
+        ncx2der= 1/(s4*df + 2*s2*nc) + 2*(nc + s2*df-x)/(4*s4*df + 8*s2*nc) - 8*((nc+s2*df-x)/(4*s4*df+8*s2*nc))**2
         der = 2*mu*ncx2der
         return val,der
     return ff
@@ -179,4 +182,27 @@ def ncxloss_true(x,df):
     return ff
 
 
+# test written
+def rvs_ncx2(df,mu,sz=1,sigma = 1.0):
+    """ Generate noncentral chi-squared random variates with mu, sigma parameterization
+    i.e. the squared norm of a multivariate normal
+
+    Parameters
+    ----------
+    df : degrees of freedom
+    mu: the norm of the mean of the multivariate normal
+    sz: the number of variates to generate
+    sigma: the marginal standard deviation of the multivariate normal
+
+    Returns
+    -------
+    ans: np array
+    """
+    mu = np.atleast_1d(mu)
+    if len(mu) ==1:
+        ans = (mu*np.ones(sz) + npr.normal(0,sigma,sz))**2 + (sigma**2)*spst.chi2.rvs(df-1,size=sz)
+        return ans
+    else:
+        ans = (np.squeeze(mu) + npr.normal(0,sigma,len(mu)))**2 + (sigma**2)*spst.chi2.rvs(df-1,size=len(mu))
+        return ans
 
