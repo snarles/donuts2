@@ -1,5 +1,5 @@
 import numpy as np
-import nibabel as nib
+#import nibabel as nib # not used
 import donuts 
 import os
 import os.path as op
