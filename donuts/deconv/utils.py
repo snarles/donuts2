@@ -279,10 +279,10 @@ def arc_emd(true_pos,true_w,est_pos,est_w):
     est_pos = normalize_rows(est_pos)
     true_w = true_w/sum(true_w)
     est_w = est_w/sum(est_w)
-    true_pos = true_pos[true_w > 0,:]
-    true_w = true_w[true_w > 0]
-    est_pos = est_pos[est_w > 0,:]
-    est_w = est_w[est_w > 0]
+    true_pos = true_pos[np.squeeze(true_w) > 0,:]
+    true_w = true_w[np.squeeze(true_w) > 0]
+    est_pos = est_pos[np.squeeze(est_w) > 0,:]
+    est_w = est_w[np.squeeze(est_w) > 0]
     dm = arcdist(true_pos,est_pos).ravel()
     ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
     return ee
