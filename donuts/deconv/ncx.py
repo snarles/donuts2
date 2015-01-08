@@ -119,8 +119,10 @@ def ncxloss_gauss(x,df,sigma=1.0):
     s4 = sigma**4
     def ff(mu):
         nc = mu**2
-        val= .5*np.log(2*np.pi*(2*s4*df+4*s2*nc)) + (nc+s2*df-x)**2/(4*s4*df+8*s2*nc)
-        ncx2der= 1/(s4*df + 2*s2*nc) + 2*(nc + s2*df-x)/(4*s4*df + 8*s2*nc) - 8*((nc+s2*df-x)/(4*s4*df+8*s2*nc))**2
+        vv = 2*s4*df+4*s2*nc
+        numer = nc+s2*df-x
+        val= .5*np.log(2*np.pi*(vv)) + (numer)**2/(2*vv)
+        ncx2der= 2*s2/vv + numer/vv - 2*s2*(numer/vv)**2
         der = 2*mu*ncx2der
         return val,der
     return ff

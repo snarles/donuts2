@@ -346,6 +346,11 @@ def test_ncxloss_gauss():
     y = f(mus)[0]
     npt.assert_almost_equal(spst.pearsonr(y,y0)[0],1,decimal=3)
     # test derivatives
+    df = npr.randint(5,10)
+    x = npr.uniform(70,100)
+    mus = np.arange(30,70,1.0)
+    sigma = npr.uniform(.5,2.0)
+    f = ncx.ncxloss_gauss(x,df,sigma)
     def fval(x):
         return f(x)[0]
     npt.assert_almost_equal(f(mus)[1],ncx.numderiv(fval,mus,1e-3),decimal=3)
