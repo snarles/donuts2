@@ -124,7 +124,9 @@ def ncxloss_gauss(x,df,sigma=1.0):
         val= .5*np.log(2*np.pi*(vv)) + (numer)**2/(2*vv)
         ncx2der= 2*s2/vv + numer/vv - 2*s2*(numer/vv)**2
         der = 2*mu*ncx2der
-        return val,der
+        ncx2der2 = - 8*(s4 + s2*numer)/(vv**2) + 1/vv + 16*(s2**2)*(numer)**2/(vv**3)
+        der2 = 2*ncx2der + (2*mu)**2*ncx2der2
+        return val,der,der2
     return ff
 
 # test written

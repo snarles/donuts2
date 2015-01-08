@@ -354,6 +354,7 @@ def test_ncxloss_gauss():
     def fval(x):
         return f(x)[0]
     npt.assert_almost_equal(f(mus)[1],ncx.numderiv(fval,mus,1e-3),decimal=3)
+    npt.assert_almost_equal(f(mus)[2],ncx.numderiv2(fval,mus,1e-3),decimal=3)
     # demonstrate asymptotic consistency
     df = npr.randint(5,20)
     mu0 = npr.uniform(20,50)
