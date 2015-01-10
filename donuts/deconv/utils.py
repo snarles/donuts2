@@ -1,9 +1,11 @@
 import numpy as np
 import numpy.linalg as nla
+import numpy.random as npr
 import scipy as sp
 import scipy.optimize as spo
 import scipy.spatial.distance as dist
 import scipy.stats as spst
+import scipy.special as sps
 import donuts.emd as emd
 
 # test written
@@ -347,3 +349,67 @@ def geosphere(n):
     v_f = np.hstack(v_final)
     v_norm = np.vstack([x/nla.norm(x) for x in v_f.T]).T
     return v_norm.T
+
+# test written
+def cart2sph(xyz): # rtp[:,1] is polar, rtp[:,2] is azimuthal
+    rtp = np.reshape(xyz,(-1,3))
+    xy = xyz[:,0]**2 + xyz[:,1]**2
+    r = np.sqrt(xy + xyz[:,2]**2)
+    theta = np.arctan2(np.sqrt(xy),xyz[:,2])
+    phi = np.arctan2(xyz[:,1],xyz[:,0])
+    rtp = np.vstack([r,theta,phi]).T
+    return rtp
+
+# test written, see test_cart2sph
+def sph2cart(rtp):
+    rtp = np.reshape(rtp,(-1,3))
+    st = np.sin(rtp[:,1])
+    x = rtp[:,0]*st*np.cos(rtp[:,2])
+    y = rtp[:,0]*st*np.sin(rtp[:,2])
+    z = rtp[:,0]*np.cos(rtp[:,1])
+    xyz = np.vstack([x,y,z]).T
+    return xyz
+
+# test started
+def georandsphere(n,k):
+    temp = [0]*k
+    grid0 = geosphere(n)
+    for ii in range(k):
+        temp[ii] = np.dot(grid0,rand_ortho(3))
+    ans = np.vstack(temp)
+    return ans
+
+# test written, see test_rsh_basis
+def real_sph_harm(m,n,rtp):
+    rtp = np.reshape(rtp,(-1,3))
+    p = rtp[:,2]
+    t = rtp[:,1]
+    if m==0:
+        return np.sqrt(2)*sps.sph_harm(m,n,p,t).real
+    if m > 0:
+        return sps.sph_harm(m,n,p,t).real
+    if m < 0:
+        return np.sqrt(2)*sps.sph_harm(m,n,p,t).imag
+
+# test started
+def randfunc(k,bandwidth):
+    pos = normalize_rows(npr.normal(0,1,(k,3)))
+    ws = np.ones((k,1))/k
+    # generates a function on the sphere which is a mixture of "gaussians"
+    def f(grid):
+        y = np.squeeze(np.dot(np.exp(-(1-np.dot(grid,pos.T))**2/bandwidth),ws))
+        return y
+    return f
+
+# test written
+def rsh_basis(grid,n0):
+    rtp = cart2sph(grid)
+    temp = [0]*(n0+1)**2
+    count = 0
+    for n in range(n0+1):
+        for m in range(-n,(n+1)):
+            temp[count] = real_sph_harm(m,n,rtp)
+            temp[count] = temp[count]/nla.norm(temp[count])
+            count = count+1
+    ans = np.vstack(temp).T
+    return ans

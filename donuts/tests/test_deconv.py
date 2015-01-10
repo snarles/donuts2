@@ -5,6 +5,7 @@ import numpy.linalg as nla
 import scipy.stats as spst
 import scipy as sp
 import scipy.optimize as spo
+import scipy.special as sps
 import numpy.testing as npt
 import scipy.spatial.distance as spd
 import donuts.deconv.utils as du
@@ -412,4 +413,26 @@ def test_rvs_ncx2():
         #x = sigma*spst.ncx2.rvs(df,(mu/sigma)**2,size = 100000)
         npt.assert_almost_equal(np.mean(x)/(mu**2 + (sigma**2)*df),1,decimal=2)
         npt.assert_almost_equal(np.var(x)/(4*(sigma**2)*mu**2 + 2*(sigma**4)*df),1,decimal=2)
+    return
+
+def test_sph2cart():
+    xyz0 = du.geosphere(4)
+    rtp = du.cart2sph(xyz0)
+    xyz = du.sph2cart(rtp)
+    npt.assert_almost_equal(xyz,xyz0,decimal=10)
+    return
+
+def test_georandsphere():
+    xyz = du.georandsphere(4,5)
+    return
+
+def test_rsh_basis():
+    sgrid = du.georandsphere(5,8)
+    xs = du.rsh_basis(sgrid,4)
+    fudge = .5
+    npt.assert_almost_equal(fudge*np.dot(xs.T,xs),fudge*np.eye(np.shape(xs)[1]),decimal=2)
+    return
+
+def test_randfunc():
+    f = du.randfunc(20.0,.5)
     return
