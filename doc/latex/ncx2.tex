@@ -1,0 +1,64 @@
+\documentclass[11pt]{article} 
+
+% packages with special commands
+\usepackage{amssymb, amsmath}
+\usepackage{epsfig}
+\usepackage{array}
+\usepackage{ifthen}
+\usepackage{color}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+%\usepackage{mathtools}
+\definecolor{grey}{rgb}{0.5,0.5,0.5}
+
+\begin{document}
+\newcommand{\tr}{\text{tr}}
+\newcommand{\E}{\textbf{E}}
+\newcommand{\diag}{\text{diag}}
+\newcommand{\argmax}{\text{argmax}}
+\newcommand{\Cov}{\text{Cov}}
+\pagestyle{fancy}
+
+\title{Working with noncentral chi distributions}
+
+\author{Charles Zheng}
+
+\maketitle
+
+\begin{abstract}
+We observe $y_i \sim \chi^2_n(\mu_i^2)$ where $\mu_i = X_i \beta$ for some matrix $X$
+and coefficients $\beta$.
+Computing the log-likelihood and its derivatives with respect to $\mu$ requires special care.
+\end{abstract}
+
+\section{Preliminaries}
+
+Recall the definition of the noncentral $\chi^2$ distribution with $n$ degrees of freedom and noncentrality parameter $\lambda$.
+The density is
+\[
+\sum_{k=0}^\infty \frac{e^{-\lambda/2} (\lambda/2)^k }{k!} \exp[k \log(\lambda/2) + (k + (n/2))\log 2 - \log \Gamma(k + (n/2)) + (k+(n/2)-1) \log x -(x/2)]
+\]
+A compact way to express the log-likelihood $l$ and its derivatives with respect to the noncentrality parameter
+$\dot{l} = (\partial l/\partial \lambda)$, $\ddot{l} = (\partial^2 l/\partial \lambda^2)$ is as follows.
+
+Recall the log-sum-exp function $lse(x_1,\hdots,) = \log \sum_{k=1}^\infty e^{x_k}$.
+Define $c = -(\lambda + x)/2 + (n/2)\log 2 + ((n/2)-1)\log x$.
+Define $t_k = -\log\Gamma(k + (n/2)) + k \log(\lambda x/4) - \log\Gamma(k+1)$ for $k=0,\hdots$.
+Then let $s_0 = c + lse(t_k)$, $s_1 = c + lse(t_k + \log k)$, $s_2 = c + lse(t_k + 2\log k)$.
+Then $l = s_0$, $\dot{l} = \lambda^{-1} e^{s_1} - (1/2)e^{s_0}$,and
+\[
+\ddot{l} = \lambda^{-2} e^{s_2} + (1/4)e^{s_0} - (\lambda^{-2} + \lambda^{-1}) e^{s_1}
+\]
+
+Defining $\mu =\sqrt{\lambda}$ and $\ell(\mu) = l(n,\lambda,x)$, we have $\ell = l$, $\dot{\ell} = 2\mu \dot{\ell}$, $\ddot{\ell} = 2\dot{l} + 4\mu^2 \ddot{l}$.
+
+\section{Methods}
+
+The difficulty of the above computations is due to the computation of quantities $s_0,$, $s_1$, $s_2$, which have in common the expression
+\[
+g(a,b,c,d) := \log\left(\sum_{k=0}^\infty \exp[-\log \Gamma(k + a) - \log \Gamma(k + b) + c\log k + dk]\right)
+\]
+for some $a, b, c \geq 0$ and $c \in \mathbb{R}$.
+
+\end{document}
+
