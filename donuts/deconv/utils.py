@@ -402,7 +402,7 @@ def randfunc(k,bandwidth):
     return f
 
 # test written
-def rsh_basis(grid,n0):
+def rsh_basis(grid,n0, ortho=True):
     rtp = cart2sph(grid)
     temp = [0]*(n0+1)**2
     count = 0
@@ -412,4 +412,7 @@ def rsh_basis(grid,n0):
             temp[count] = temp[count]/nla.norm(temp[count])
             count = count+1
     ans = np.vstack(temp).T
+    q,r = nla.qr(ans)
+    if ortho:
+        return q
     return ans
