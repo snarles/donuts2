@@ -277,6 +277,10 @@ def arc_emd(true_pos,true_w,est_pos,est_w):
     -------
     ee       : Earthmover distance, a number from 0 to pi/2
     """
+    if sum(est_w > 0) > 500:
+        est_w[est_w < np.sort(est_w)[499]] = 0
+    if sum(true_w > 0) > 500:
+        true_w[true_w < np.sort(true_w)[499]] = 0
     true_pos = normalize_rows(true_pos)
     est_pos = normalize_rows(est_pos)
     true_w = true_w/sum(true_w)
