@@ -1,14 +1,63 @@
 import numpy as np
 import numpy.linalg as nla
+import numpy.random as npr
 import scipy as sp
 import scipy.optimize as spo
 import scipy.spatial.distance as dist
+import scipy.stats as spst
+import scipy.special as sps
 import donuts.emd as emd
 
+# test written
+def scalarize(x):
+    """ Utility function: converts a np array or scalar to scalar if len==1
 
+    Parameters
+    ----------
+    x : np array or scalar
+
+    Returns
+    -------
+    x : np array or scalar
+
+    """
+    x = np.atleast_1d(x)
+    if len(x)==1:
+        return x[0]
+    else:
+        return x
+
+# test written    
+def column(x):
+    """ Utility function: converts a np array to column vector
+
+    Parameters
+    ----------
+    x : np array or scalar
+
+    Returns
+    -------
+    x : np array, column vector
+
+    """
+    return np.reshape(np.array(x),(-1,1))
+
+# test written
 def rank_simple(vector):
+    """ Utility function: returns ranks of a vector
+
+    Parameters
+    ----------
+    vector: np array
+
+    Returns
+    -------
+    vector: np array
+
+    """
     return sorted(range(len(vector)), key=vector.__getitem__)
 
+# test written
 def fullfact(levels):
     """ Creates a full factorial design matrix
 
@@ -29,40 +78,76 @@ def fullfact(levels):
             x = np.hstack([x2,x4])
     return x
 
+# test written
+def inds_fullfact(levels, col_inds, values):
+    """ Returns a list of indices for which fullfact(levels)[inds, col_inds[i]] = values[i]
+
+    Parameters
+    ----------
+    levels : list of K integers specifying number of levels of each factor
+    col_inds: indices of columns 0...(K-1)
+    values: values, value[i] between 0...levels[col_inds[i]]
+
+    Returns
+    -------
+    inds : list of ? integers, indices where selected values are taken
+    """
+    nfacts = len(levels)
+    vals = np.array([-1]*nfacts,dtype=int)
+    vals[col_inds] = values
+    tracker = nfacts-1
+    cur_arr = np.array([0],dtype=int)
+    flag = True
+    temp = [1] + levels[::-1]
+    temp = temp[0:-1]
+    pd = np.cumprod(temp,dtype=int)[::-1]
+    while tracker > -1:
+        if vals[tracker]==-1:
+            cur_arr = np.hstack([cur_arr + pd[tracker]*ii for ii in range(levels[tracker])])
+        if vals[tracker] > 0:
+            cur_arr = cur_arr + pd[tracker]*vals[tracker]
+        tracker = tracker-1
+    return cur_arr
+
+# test written
+def ordered_partitions(n,k):
+    """ Forms all k-length nonnegative integer partitions of n (where ordering matters)
+
+    Parameters
+    ----------
+    n: integer > 0, total number of elements
+    k: integer > 0, max number of sets in partition
+
+    Returns
+    -------
+    ans: np array, ?? x k, each row is a partition
+
+    """
+    if k==1:
+        return n*np.ones((1,1))
+    subparts = [0]*(n+1)
+    for ii in range(n+1):
+        temp = ordered_partitions(n-ii,k-1)
+        temp_p = np.shape(temp)[0]
+        subparts[ii] = np.hstack([ii*np.ones((temp_p,1)),temp])
+    return np.vstack(subparts)
+
+# skipped test
 def norms(x) :
-    # computes the norms of the rows of x
+    """ computes the norms of the rows of x """
     nms = np.sum(np.abs(x)**2,axis=-1)**(1./2)
     return nms
 
+# test written
 def normalize_rows(x):
-    # normalizes the rows of x
+    """ normalizes the rows of x """
     n = np.shape(x)[0]
     p = np.shape(x)[1]
     nms = norms(x).reshape(-1,1)
     x = np.multiply(x, 1./np.tile(nms,(1,p)))
     return x
-    
 
-def sph_lattice(resolution, radius):
-    """ Creates a ? x 3 array of points *inside* a sphere
-    
-    Parameters
-    ----------
-    resolution: determines the minimum distance between points
-      as radius/resolution
-    radius: radius of the sphere
-    
-    Returns
-    -------
-    x : ? x 3 array of points
-    """
-    k = 2*resolution + 1
-    x = fullfact([k,k,k])/resolution - 1
-    nms = np.sum(np.abs(x)**2,axis=-1)**(1./2)
-    x = x[np.nonzero(nms <= 1)[0],:]
-    x = radius * x
-    return x 
-
+# test written    
 def ste_tan_kappa(grid, bvecs):
     """ Generates the Steksjal-Tanner signal
         for fibers oriented with directions and kappa determined by
@@ -83,7 +168,8 @@ def ste_tan_kappa(grid, bvecs):
     x = np.exp(-np.dot(grid, bvecs.T)**2).T
     return x
 
-def simulate_signal_kappa(fibers, weights, bvecs, sigma):
+# test written
+def simulate_signal_kappa(fibers, weights, bvecs, sigma, df=2):
     """ Simulates (Rician) noisy and noiseless signal from a voxel
         with fiber directions specified by fibers,
         fiber kappas specified by root-norm of fibers,
@@ -97,6 +183,8 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma):
     weights: K x 1 numpy array of fiber weights
     bvecs: N x 3 numpy array of unit vectors
       corresponding to DWI measurement directions
+    sigma: noise level
+    df: degrees of freedom
     
     Returns
     -------
@@ -106,65 +194,75 @@ def simulate_signal_kappa(fibers, weights, bvecs, sigma):
     x = ste_tan_kappa(fibers, bvecs)
     n = np.shape(bvecs)[0]
     y0 = np.dot(x,weights)
-    raw_err = sigma*np.random.normal(0,1,(n,2))
-    raw_err[:,0] = raw_err[:,0] + np.squeeze(y0)
-    y1 = norms(raw_err).reshape(-1,1)
-    return y0,y1
+    y0sq = (y0/sigma)**2
+    y1sq = spst.ncx2.rvs(df,y0sq)
+    y1 = np.sqrt(y1sq)*sigma
+    return column(y0),column(y1)
 
-def cv_nnls(y,xs,k_folds):
-    """ Computes cross-validation error of regression y on xs
+# test written
+def rand_ortho(k):
+    """ returns a random orthogonal matrix of size k x k """
+    a = np.random.normal(0,1,(k,k))
+    u, s, v = nla.svd(a)
+    return u
 
-    Parameters
-    ----------
-    y : n x 1 numpy array, signal
-    xs : n x p numpy array, design matrix
-    k_folds : number of cross-validation folds
-    
-    Outputs
-    -------
-    cve : cv error for the k_folds folds
-    """
-    n = len(y)
-    rp = np.random.permutation(n)/float(n)
-    cve = np.zeros(k_folds)
-    for i in range(k_folds):
-        filt_te = np.logical_and(rp >= (float(i)/k_folds), rp < ((float(i)+1)/k_folds))
-        y_tr = y[np.nonzero(np.logical_not(filt_te))]
-        y_te = y[np.nonzero(filt_te)]
-        xs_tr = xs[np.nonzero(np.logical_not(filt_te))]
-        xs_te = xs[np.nonzero(filt_te)]
-        beta = spo.nnls(xs_tr,np.squeeze(y_tr))[0]
-        yh = np.dot(xs_te, beta)
-        cve[i] = sum((yh - np.squeeze(y_te))**2)
-    return cve
-
-def ls_est(y,xs,grid):
-    """ Fits the SFM using NNLS
+# test written
+def randvecsgap(k,gap):
+    """ generates k random unit vectors with minimum arc length gap
 
     Parameters
     ----------
-    y : n x 1 numpy array, signal
-    xs : n x p numpy array, design matrix
-    grid : p x 3 numpy array, candidate directions which were used to generate xs
-    
+    k: number of vectors to be generate
+    gap: float > 0, minimum arc distance gap
+
     Outputs
     -------
-    yh : n x 1 numpy array, predicted signal
-    beta : p x 1 numpy array, the regression coefficients
-    est_w : ? x 1 numpy array, the nonnegative entries of beta in descending order
-    est_pos : ? x 3 numpy array, the points in grid corresponding to est_w
-    """
-    beta = spo.nnls(xs,np.squeeze(y))[0]
-    est_pos = grid[np.squeeze(np.nonzero(beta)),:]
-    est_w = beta[np.nonzero(beta)]
-    o = rank_simple(-est_w)
-    est_w = est_w[o]
-    est_pos = est_pos[o,:]
-    yh = np.dot(xs,beta).reshape(-1,1)
-    return yh, beta, est_pos, est_w
+    ans: k x 3 numpy array consisting of unit vectors
 
-def sym_emd(true_pos, true_w, est_pos,est_w):
-    """ Computes the EMD between two kappa-weighted FODFS
+    """
+    if gap==0:
+        ans = np.random.randn(k,3)
+        ans = normalize_rows(ans)
+        return ans
+    ans = np.zeros((k,3))
+    flag = True
+    idxs = np.zeros(k,dtype=bool)
+    while sum(idxs) < k:
+        idx = np.random.randint(k)
+        idxs[idx] = False
+        v = np.random.normal(0,1,(1,3))
+        v = v/nla.norm(v)
+        if sum(idxs) > 0:
+            dd = arcdist(v, ans[idxs,:])
+            if np.amin(np.squeeze(dd)) > gap:
+                ans[idx,:] =  v
+                idxs[idx] = True
+        else:
+            ans[idx,:] =  v
+            idxs[idx] = True
+    return ans            
+
+# test written
+def arcdist(xx,yy):
+    """ Computes pairwise arc-distance matrix
+
+    Parameters
+    ----------
+    xx : a x 3 numpy array
+    yy : b x 3 numpy array
+
+    Outputs
+    -------
+    dd: a x b numpy array
+    """
+    dm = np.absolute(np.dot(xx,yy.T))
+    dm[dm > .99999999999999999] = .99999999999999999
+    dd = np.arccos(dm)
+    return dd
+
+# test written
+def arc_emd(true_pos,true_w,est_pos,est_w):
+    """ Computes the EMD between two unit length fODFS using arc-length distance
 
     Parameters
     ----------
@@ -177,21 +275,141 @@ def sym_emd(true_pos, true_w, est_pos,est_w):
     
     Outputs
     -------
-    ee       : Earthmover distance, a number from 0 to 4
+    ee       : Earthmover distance, a number from 0 to pi/2
     """
+    true_pos = normalize_rows(true_pos)
+    est_pos = normalize_rows(est_pos)
     true_w = true_w/sum(true_w)
     est_w = est_w/sum(est_w)
-    d1 = dist.cdist(true_pos,est_pos)
-    d2 = dist.cdist(true_pos,-est_pos)
-    dm = np.minimum(d1,d2).ravel()
+    true_pos = true_pos[np.squeeze(true_w) > 0,:]
+    true_w = true_w[np.squeeze(true_w) > 0]
+    est_pos = est_pos[np.squeeze(est_w) > 0,:]
+    est_w = est_w[np.squeeze(est_w) > 0]
+    dm = arcdist(true_pos,est_pos).ravel()
     ee = emd.emd(list(true_w.ravel()), list(est_w.ravel()), dm)
     return ee
 
-def rand_ortho(k):
-    # returns a random orthogonal matrix of size k x k
-    a = np.random.normal(0,1,(k,k))
-    u, s, v = nla.svd(a)
-    return u
+# test written
+def geosphere(n):
+    """ returns a ??x3 spherical design
 
+    Parameters
+    ----------
+    n: number of subdivisions
 
+    Outputs
+    -------
+    ans: ?? x 3 numpy array consisting of unit vectors
+         symmetric about the z-axis
 
+    """
+    # set up icosahedron
+    v = np.zeros((3,12))
+    v[:,0] = [0,0,1]
+    v[:,11] = [0,0,-1]
+    seq1 = 2.0*np.arange(1,6,1.0)*np.pi/5
+    seq2 = seq1 + np.pi/5
+    v[:,1:6] = 2.0/np.sqrt(5) * np.vstack([np.cos(seq1),np.sin(seq1),0.5*np.ones(5)])
+    v[:,6:11] = 2.0/np.sqrt(5) * np.vstack([np.cos(seq2),np.sin(seq2),-.5*np.ones(5)])
+    edges = [0]*30
+    for ii in range(5):
+        edges[ii] = (v[:,0],v[:,1+ii])
+        edges[2*(ii+1)+8] = (v[:,1+ii],v[:,6+ii])
+        edges[25+ii] = (v[:,11],v[:,6+ii])
+    for ii in range(4):
+        edges[ii+5] = (v[:,1+ii],v[:,2+ii])
+        edges[ii+20] = (v[:,6+ii],v[:,7+ii])
+        edges[2*(ii+1)+9] = (v[:,2+ii],v[:,6+ii])
+    edges[9] = (v[:,5],v[:,1])
+    edges[19] = (v[:,1],v[:,10])
+    edges[24] = (v[:,10],v[:,6])
+
+    faces = [0]*20
+    for ii in range(4):
+        faces[ii] = (v[:,0],v[:,1+ii],v[:,2+ii])
+        faces[15+ii] = (v[:,11],v[:,6+ii],v[:,7+ii])
+        faces[2*(ii+1)+3] = (v[:,1+ii],v[:,6+ii],v[:,2+ii])
+        faces[2*(ii+1)+4] = (v[:,6+ii],v[:,2+ii],v[:,7+ii])
+    faces[4] = (v[:,0],v[:,5],v[:,1])
+    faces[19] = (v[:,11],v[:,10],v[:,6])
+    faces[13] = (v[:,5],v[:,10],v[:,1])
+    faces[14] = (v[:,10],v[:,1],v[:,6])
+    # interpolate
+    v_final = [v]
+    pp = 12+30*(n-1)+10*(n-1)*(n-2)
+    if n > 1:
+        seq = np.arange(1,n,1.0)
+        mat = np.vstack([seq/n,1-(seq/n)])
+        v_edges = np.hstack([np.dot(np.vstack([x[0],x[1]]).T,mat) for x in edges])
+        v_final = v_final+[v_edges]
+    if n > 2:
+        mat2 = (1.0/n * (ordered_partitions(n-3,3)+1)).T
+        v_faces = np.hstack([np.dot(np.vstack([x[0],x[1],x[2]]).T,mat2) for x in faces])
+        v_final = v_final+[v_faces]
+    v_f = np.hstack(v_final)
+    v_norm = np.vstack([x/nla.norm(x) for x in v_f.T]).T
+    return v_norm.T
+
+# test written
+def cart2sph(xyz): # rtp[:,1] is polar, rtp[:,2] is azimuthal
+    rtp = np.reshape(xyz,(-1,3))
+    xy = xyz[:,0]**2 + xyz[:,1]**2
+    r = np.sqrt(xy + xyz[:,2]**2)
+    theta = np.arctan2(np.sqrt(xy),xyz[:,2])
+    phi = np.arctan2(xyz[:,1],xyz[:,0])
+    rtp = np.vstack([r,theta,phi]).T
+    return rtp
+
+# test written, see test_cart2sph
+def sph2cart(rtp):
+    rtp = np.reshape(rtp,(-1,3))
+    st = np.sin(rtp[:,1])
+    x = rtp[:,0]*st*np.cos(rtp[:,2])
+    y = rtp[:,0]*st*np.sin(rtp[:,2])
+    z = rtp[:,0]*np.cos(rtp[:,1])
+    xyz = np.vstack([x,y,z]).T
+    return xyz
+
+# test started
+def georandsphere(n,k):
+    temp = [0]*k
+    grid0 = geosphere(n)
+    for ii in range(k):
+        temp[ii] = np.dot(grid0,rand_ortho(3))
+    ans = np.vstack(temp)
+    return ans
+
+# test written, see test_rsh_basis
+def real_sph_harm(m,n,rtp):
+    rtp = np.reshape(rtp,(-1,3))
+    p = rtp[:,2]
+    t = rtp[:,1]
+    if m==0:
+        return np.sqrt(2)*sps.sph_harm(m,n,p,t).real
+    if m > 0:
+        return sps.sph_harm(m,n,p,t).real
+    if m < 0:
+        return np.sqrt(2)*sps.sph_harm(m,n,p,t).imag
+
+# test started
+def randfunc(k,bandwidth):
+    pos = normalize_rows(npr.normal(0,1,(k,3)))
+    ws = np.ones((k,1))/k
+    # generates a function on the sphere which is a mixture of "gaussians"
+    def f(grid):
+        y = np.squeeze(np.dot(np.exp(-(1-np.dot(grid,pos.T))**2/bandwidth),ws))
+        return y
+    return f
+
+# test written
+def rsh_basis(grid,n0):
+    rtp = cart2sph(grid)
+    temp = [0]*(n0+1)**2
+    count = 0
+    for n in range(n0+1):
+        for m in range(-n,(n+1)):
+            temp[count] = real_sph_harm(m,n,rtp)
+            temp[count] = temp[count]/nla.norm(temp[count])
+            count = count+1
+    ans = np.vstack(temp).T
+    return ans
