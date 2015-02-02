@@ -277,6 +277,10 @@ def arc_emd(true_pos,true_w,est_pos,est_w):
     -------
     ee       : Earthmover distance, a number from 0 to pi/2
     """
+    if sum(est_w > 0) > 500:
+        est_w[est_w < np.sort(est_w)[499]] = 0
+    if sum(true_w > 0) > 500:
+        true_w[true_w < np.sort(true_w)[499]] = 0
     true_pos = normalize_rows(true_pos)
     est_pos = normalize_rows(est_pos)
     true_w = true_w/sum(true_w)
@@ -402,7 +406,7 @@ def randfunc(k,bandwidth):
     return f
 
 # test written
-def rsh_basis(grid,n0):
+def rsh_basis(grid,n0, ortho=True):
     rtp = cart2sph(grid)
     temp = [0]*(n0+1)**2
     count = 0
@@ -412,4 +416,7 @@ def rsh_basis(grid,n0):
             temp[count] = temp[count]/nla.norm(temp[count])
             count = count+1
     ans = np.vstack(temp).T
+    q,r = nla.qr(ans)
+    if ortho:
+        return q
     return ans
