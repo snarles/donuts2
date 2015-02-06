@@ -10,7 +10,7 @@ outname = savedirs[dataset] + 'coil' + str(ind)
 rawdata = nib.load(fname).get_data()
 rdr = rawdata.ravel()**2
 coords = np.vstack(np.unravel_index(range(120*120*69), (120, 120, 69))).T
-newdata = np.hstack([coords, ind * np.ones(993600, 1), np.array(rdr.reshape((993600, 150))*10000, dtype=int)])
+newdata = np.hstack([coords, ind * np.ones((993600, 1), dtype=int), np.array(rdr.reshape((993600, 150))*10000, dtype=int)])
 
 def int2str(z):
     if (z < 120):
