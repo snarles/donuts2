@@ -27,7 +27,7 @@ def str2ints(st):
 
 
 
-dataset = 0
+dataset = 1
 sdata = (120, 120, 69, 150)
 inds_filt = [16, 31, 46, 61, 75, 90, 105, 120, 135, 149]
 sdata0 = (sdata[0], sdata[1], sdata[2])
