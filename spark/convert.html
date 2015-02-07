@@ -1695,16 +1695,16 @@ In&nbsp;[8]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[10]:
+In&nbsp;[15]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
 <div class="highlight"><pre><span class="n">files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
 <span class="n">ipynbs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">file</span> <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="s">&#39;.ipynb&#39;</span> <span class="ow">in</span> <span class="nb">file</span> <span class="ow">and</span> <span class="s">&#39;_checkpoints&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">file</span><span class="p">]</span>
 <span class="k">for</span> <span class="n">ipynb</span> <span class="ow">in</span> <span class="n">ipynbs</span><span class="p">:</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">&#39;ipython nbconvert --to html &#39;</span><span class="o">+</span><span class="nb">file</span><span class="p">)</span>
-<span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">&#39;git add -a *.ipynb *.html&#39;</span><span class="p">)</span>
-<span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">&#39;git commit -a -m &quot;Auto HTML Conversion&quot;&#39;</span><span class="p">)</span>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="s">&#39;ipython nbconvert --to html &#39;</span><span class="o">+</span><span class="n">ipynb</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="s">&#39;git add *.ipynb *.html&#39;</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="s">&#39;git commit -a -m &quot;Auto HTML Conversion&quot;&#39;</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -1716,12 +1716,12 @@ In&nbsp;[10]:
 
 
 <div class="output_area"><div class="prompt output_prompt">
-    Out[10]:</div>
+    Out[15]:</div>
 
 
 <div class="output_text output_subarea output_pyout">
 <pre>
-256
+&apos;[master da1a63c] Auto HTML Conversion\n 11 files changed, 34811 insertions(+)\n create mode 100644 spark/Untitled0.html\n create mode 100644 spark/chris1.html\n create mode 100644 spark/chris2_exploratory.html\n create mode 100644 spark/chrisSC.html\n create mode 100644 spark/convert.html\n create mode 100644 spark/convert.ipynb\n create mode 100644 spark/noise_est_single.html\n create mode 100644 spark/proc_data.html\n create mode 100644 spark/proc_data_b.html\n create mode 100644 spark/simulations.html\n create mode 100644 spark/sparkDonuts.html\n&apos;
 </pre>
 </div>
 
@@ -1738,7 +1738,7 @@ In&nbsp;[]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre><span class="n">ipynb</span>
+<div class="highlight"><pre> 
 </pre></div>
 
 </div>
