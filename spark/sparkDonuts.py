@@ -201,6 +201,39 @@ def rvs_ncx2(df,mu,sz=1,sigma = 1.0):
         return ans
 
 
+# In[ ]:
+
+# base 90 encoding
+def int2str(z):
+    if (z < 90):
+        return chr(z+33)
+    else:
+        resid = int(z % 90)
+        z = int(z-resid)/90
+        return int2str(z)+chr(90+33)+chr(resid+33)
+    
+def ints2str(zs):
+    return ''.join(int2str(z) for z in zs)
+
+def str2ints(st):
+    os = [ord(c)-33 for c in st]
+    zs = []
+    counter = 0
+    while counter < len(os):
+        if os[counter] == 90:
+            zs[-1] = zs[-1] * 90 + os[counter + 1]
+            counter = counter + 1
+        else:
+            zs.append(os[counter])
+        counter = counter + 1
+    return zs
+
+def str2array(st):
+    pts = st.split('|')
+    arr = np.array([str2ints(pt) for pt in pts]).T
+    return arr
+
+
 # In[14]:
 
 ncases = 10
