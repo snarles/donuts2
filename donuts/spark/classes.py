@@ -3,13 +3,13 @@
 
 # # Module
 
-# In[16]:
+# In[28]:
 
 import numpy as np
 import math
 
 
-# In[4]:
+# In[29]:
 
 class TestClass(object):
     a = 5
@@ -30,13 +30,13 @@ class TestTuple(tuple):
         return a + a
 
 
-# In[5]:
+# In[30]:
 
 def csvrow2array(st):
     return np.array([float(s) for s in st.replace(',',' ').replace('  ',' ').split(' ')])
 
 
-# In[6]:
+# In[31]:
 
 def int2str(z):
     """
@@ -168,7 +168,7 @@ def str2ints(st, maxlen = -1):
     return zs
 
 
-# In[7]:
+# In[32]:
 
 class CffStr(str):
     """
@@ -188,14 +188,14 @@ class CffStr(str):
     """
     
     def __new__(cls, initOpts):
-        value = ''
+        value = 'emptyCFF'
         if type(initOpts) == str:
             value = initOpts
-        if type(initOpts) == int:
+        elif type(initOpts) == int:
             value = int2str(initOpts)
-        if str(type(initOpts)) in ["<type 'numpy.ndarray'>", "<type 'list'>", "<type 'tuple'>"]:
+        elif str(type(initOpts)) in ["<type 'numpy.ndarray'>", "<type 'list'>", "<type 'tuple'>"]:
             value = ints2str(initOpts)
-        if type(initOpts) == dict:
+        elif type(initOpts) == dict:
             if initOpts.has_key('value'):
                 value = initOpts['value']
             if initOpts.has_key('ints'):
@@ -203,6 +203,8 @@ class CffStr(str):
             if initOpts.has_key('floats'):
                 assert(initOpts.has_key('intRes'))
                 value = floats2str(initOpts['floats'], initOpts['intRes'])
+        elif 'CffStr' in str(type(initOpts)):
+            value = str(initOpts)
         return str.__new__(cls, value)
     
     def getValue(self):
@@ -244,7 +246,7 @@ class MultiCffStr(CffStr):
         return self.getCffs()[0].getFloats()
 
 
-# In[8]:
+# In[33]:
 
 if __name__ == "__main__":
     c1 = CffStr({'floats': np.array([-5.1,2.2]), 'intRes': 2})
@@ -260,7 +262,7 @@ if __name__ == "__main__":
     print(m1.getCffs())
 
 
-# In[9]:
+# In[34]:
 
 class Voxel(tuple):
     """
@@ -290,10 +292,10 @@ class Voxel(tuple):
                 value = MultiCffStr('~'.join(temp[1:]))
             else:
                 value = CffStr(temp[1])
-        if type(initOpts) == tuple: # constructed via Spark deserialization
+        elif type(initOpts) == tuple: # constructed via Spark deserialization
             key = CffStr(initOpts[0])
             value = CffStr(initOpts[1])
-        if type(initOpts) == dict:
+        elif type(initOpts) == dict:
             if initOpts.has_key('csv_row'):
                 ncoords = initOpts.get('ncoords', 3)
                 temp = csvrow2array(initOpts['csv_row'])
@@ -329,7 +331,7 @@ class Voxel(tuple):
         return delimiter.join([str(v) for v in np.hstack([self.getCoords(), self.getData()])])
 
 
-# In[10]:
+# In[35]:
 
 if __name__ == "__main__":
     m = Voxel({'coords': (1, 2, 3), 'floats': np.array([1.12, 3.3, -4.5]), 'intRes': 2})
@@ -342,7 +344,7 @@ if __name__ == "__main__":
     print(m.toCsvString())
 
 
-# In[13]:
+# In[36]:
 
 if __name__ == "__main__":
     import numpy.random as npr
@@ -372,9 +374,9 @@ if __name__ == "__main__":
     print(keys)
 
 
-# # Testing in Spark
+# # Testing Import
 
-# In[21]:
+# In[12]:
 
 if __name__ == "__main__":
     import numpy.random as npr
@@ -403,6 +405,34 @@ if __name__ == "__main__":
     print("")
     keys = [k for (k, v) in voxes]
     print(keys)
+
+
+# In[13]:
+
+#voxes[50].getCoords()
+
+
+# # Testing in Spark
+
+# In[18]:
+
+if __name__ == "__main__" and 'sc' in vars():
+    import donuts.spark.classes as dc
+    def f(x):
+        return Voxel({'intRes': 3, 'csv_row': x})
+    raw_rdd = sc.parallelize(rawdata, 2)
+    voxes = raw_rdd.map(f).collect()
+
+
+# In[7]:
+
+
+
+
+
+# In[20]:
+
+
 
 
 # In[ ]:
