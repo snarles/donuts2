@@ -376,7 +376,7 @@ if __name__ == "__main__":
 
 # # Testing Import
 
-# In[12]:
+# In[32]:
 
 if __name__ == "__main__":
     import numpy.random as npr
@@ -384,9 +384,9 @@ if __name__ == "__main__":
     from StringIO import StringIO
     si = StringIO()
     # define functions used in testing
-    nvox = 100
+    nvox = 60
     def gen_vox():
-        coords = npr.randint(0, 10, 3)
+        coords = npr.randint(0, 2, 3)
         data = npr.randn(20)
         return np.hstack([coords, data])
     # simulate text file
@@ -404,17 +404,12 @@ if __name__ == "__main__":
     print(Voxel(voxes[50].toString()).toCsvString())
     print("")
     keys = [k for (k, v) in voxes]
-    print(keys)
-
-
-# In[13]:
-
-#voxes[50].getCoords()
+    print(sorted(keys))[0:20]
 
 
 # # Testing in Spark
 
-# In[18]:
+# In[33]:
 
 if __name__ == "__main__" and 'sc' in vars():
     import donuts.spark.classes as dc
@@ -422,15 +417,21 @@ if __name__ == "__main__" and 'sc' in vars():
         return Voxel({'intRes': 3, 'csv_row': x})
     raw_rdd = sc.parallelize(rawdata, 2)
     voxes = raw_rdd.map(f).collect()
+    def v2c(v):
+        return str(v)
+    def c2c(c1, c2):
+        return c1 + '~~' + c2
+    combovoxes = raw_rdd.map(f).combineByKey(v2c, c2c, c2c).collect()
+    print(combovoxes[0][0])
+    print(combovoxes[0][1].split('~~'))
 
 
-# In[7]:
+# In[8]:
 
 
 
 
-
-# In[20]:
+# In[ ]:
 
 
 
