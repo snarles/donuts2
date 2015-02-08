@@ -3,12 +3,12 @@
 
 # # Module
 
-# In[1]:
+# In[10]:
 
 import numpy as np
 
 
-# In[4]:
+# In[11]:
 
 class TestClass(object):
     a = 5
@@ -29,13 +29,13 @@ class TestTuple(tuple):
         return a + a
 
 
-# In[19]:
+# In[12]:
 
 def csvrow2array(st):
     return np.array([float(s) for s in st.replace(',',' ').replace('  ',' ').split(' ')])
 
 
-# In[41]:
+# In[13]:
 
 def int2str(z):
     """
@@ -167,7 +167,7 @@ def str2ints(st, maxlen = -1):
     return zs
 
 
-# In[42]:
+# In[14]:
 
 class CffStr(str):
     """
@@ -192,7 +192,7 @@ class CffStr(str):
             value = initOpts
         if type(initOpts) == int:
             value = int2str(initOpts)
-        if type(initOpts) in [list, tuple, numpy.ndarray]:
+        if str(type(initOpts)) in ["<type 'numpy.ndarray'>", "<type 'list'>", "<type 'tuple'>"]:
             value = ints2str(initOpts)
         if type(initOpts) == dict:
             if initOpts.has_key('value'):
@@ -243,7 +243,7 @@ class MultiCffStr(CffStr):
         return self.getCffs()[0].getFloats()
 
 
-# In[43]:
+# In[17]:
 
 if __name__ == "__main__":
     c1 = CffStr({'floats': np.array([-5.1,2.2]), 'intRes': 2})
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     print(m1.getCffs())
 
 
-# In[60]:
+# In[18]:
 
 class Voxel(tuple):
     """
@@ -328,7 +328,7 @@ class Voxel(tuple):
         return delimiter.join([str(v) for v in np.hstack([self.getCoords(), self.getData()])])
 
 
-# In[61]:
+# In[19]:
 
 if __name__ == "__main__":
     m = Voxel({'coords': (1, 2, 3), 'floats': np.array([1.12, 3.3, -4.5]), 'intRes': 2})
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     print(m.toCsvString())
 
 
-# In[62]:
+# In[27]:
 
 if __name__ == "__main__":
     import numpy.random as npr
@@ -358,28 +358,38 @@ if __name__ == "__main__":
     np.savetxt(si, rawvoxes)
     rawdata = si.getvalue().strip().split('\n')
     voxes = [Voxel({'intRes': 3, 'csv_row': rawdat}) for rawdat in rawdata]
+    print(rawdata[50])
+    print("")
+    print(voxes[50].toCsvString())
+    print("")
+    print(Voxel(voxes[50].bareCopy()).toCsvString())
+    print("")
+    print(Voxel(voxes[50].toString()).toCsvString())
+    print("")
+    keys = [k for (k, v) in voxes]
+    print(keys)
 
 
 # # Testing in Spark
 
-# In[4]:
+# In[1]:
 
-if __name__ == "__main__":
-    import numpy.random as npr
-    from donuts.spark.classes import Voxel
-    from StringIO import StringIO
-    si = StringIO()
-    # define functions used in testing
-    nvox = 100
-    def gen_vox():
-        coords = npr.randint(0, 10, 3)
-        data = npr.randn(20)
-        return np.hstack([coords, data])
-    # simulate text file
-    rawvoxes= np.array([gen_vox() for ii in range(nvox)])
-    np.savetxt(si, rawvoxes)
-    rawdata = si.getvalue().strip().split('\n')
-    voxes = [Voxel({'intRes': 3, 'csv_row': rawdat}) for rawdat in rawdata]
+#if __name__ == "__main__":
+import numpy.random as npr
+from donuts.spark.classes import Voxel
+from StringIO import StringIO
+si = StringIO()
+# define functions used in testing
+nvox = 100
+def gen_vox():
+    coords = npr.randint(0, 10, 3)
+    data = npr.randn(20)
+    return np.hstack([coords, data])
+# simulate text file
+rawvoxes= np.array([gen_vox() for ii in range(nvox)])
+np.savetxt(si, rawvoxes)
+rawdata = si.getvalue().strip().split('\n')
+voxes = [Voxel({'intRes': 3, 'csv_row': rawdat}) for rawdat in rawdata]
 
 
 # In[ ]:
