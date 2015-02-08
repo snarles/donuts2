@@ -77,7 +77,7 @@ class Voxel(tuple):
     
     def __new__(cls, initString):
         nc = 3 # edit this when changing the number of coords
-        if len(initString) > 1: # constructed via Spark deserialization
+        if type(initString) == tuple: # constructed via Spark deserialization
             initString = initString[1]
         ints = str2ints(initString)
         coords = tuple(ints[:nc])
