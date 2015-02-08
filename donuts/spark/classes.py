@@ -30,13 +30,13 @@ class TestTuple(tuple):
         return a + a
 
 
-# In[30]:
+# In[1]:
 
 def csvrow2array(st):
     return np.array([float(s) for s in st.replace(',',' ').replace('  ',' ').split(' ')])
 
 
-# In[31]:
+# In[5]:
 
 def int2str(z):
     """
@@ -160,15 +160,15 @@ def str2ints(st, maxlen = -1):
             zs[-1] = zs[-1] * 90 + math.copysign(1, zs[-1]) * os[counter + 1]
             counter = counter + 1
         elif os[counter] == 91: # 'minus' symbol
-            zs.append(-os[counter+1])
+            zs.append(-os[counter+1])    
             counter = counter + 1
         else:
             zs.append(os[counter])
         counter = counter + 1
-    return zs
+    return [int(z) for z in zs]
 
 
-# In[32]:
+# In[6]:
 
 class CffStr(str):
     """
@@ -246,12 +246,12 @@ class MultiCffStr(CffStr):
         return self.getCffs()[0].getFloats()
 
 
-# In[33]:
+# In[7]:
 
 if __name__ == "__main__":
     c1 = CffStr({'floats': np.array([-5.1,2.2]), 'intRes': 2})
     c2 = CffStr({'ints': [1, 2, 3]})
-    c3 = CffStr((-121, 34122))
+    c3 = CffStr((-121, 34122, 140))
     
     m1 = MultiCffStr([c1, c2, c3])
     
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     print(m1.getCffs())
 
 
-# In[34]:
+# In[5]:
 
 class Voxel(tuple):
     """
@@ -331,7 +331,7 @@ class Voxel(tuple):
         return delimiter.join([str(v) for v in np.hstack([self.getCoords(), self.getData()])])
 
 
-# In[35]:
+# In[6]:
 
 if __name__ == "__main__":
     m = Voxel({'coords': (1, 2, 3), 'floats': np.array([1.12, 3.3, -4.5]), 'intRes': 2})
@@ -344,7 +344,7 @@ if __name__ == "__main__":
     print(m.toCsvString())
 
 
-# In[36]:
+# In[7]:
 
 if __name__ == "__main__":
     import numpy.random as npr
