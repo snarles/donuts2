@@ -47,7 +47,11 @@
 
 
     csv1 = readN('/root/data/old_data.csv', 1000)
-    cff1 = readN('/root/data/chris2_comb.cff', 1000)
+    cff1 = readN('/root/data/chris1_comb.cff', 1000)
+    cff2 = readN('/root/data/chris2_comb.cff', 1000)
+
+
+    comboset = cff1[:10] + cff2[:10]
 
 
     def f(x):
@@ -56,17 +60,48 @@
         return lala
 
 
-    voxes = sc.parallelize(cff1[:10],2).map(f).collect()
+    voxes = sc.parallelize(comboset,2).map(f).collect()
 
 
-    voxes[5].getCoords()
+    def lister(a):
+        return [a]
+    
+    def addList(a, b):
+        return a + b
+
+
+    voxes = sc.parallelize(comboset,2).map(f)
+
+
+    cvoxes = voxes.combineByKey(lister, addList, addList)
+
+
+    cvoxes_c = cvoxes.collect()
+
+
+    len(cvoxes_c)
 
 
 
 
-    (0, 0, 5)
+    9
 
 
+
+
+    cvoxes_c[0]
+
+
+
+
+    ('!!%',
+     ['!!%"X{nX{3({<+{Z){H\'{D\'{)){2&{R*{X*{V\'{#({S){Z*{@%{1*{!({]({Q){H\'{"+{%&{.+{1&{j*{!*{v({w({\'+{/\'{.({g%{-\'{S){0({L({E&{/\'{H\'{j%{z){b\'{C({#&{R*{o({z,{@){,\'{h&{x*{8({3,{1({B,{w\'{C+{!({C({h${c+{Q%{7){w){\'\'{e+{\\&{/\'{z({\\({V*{b({l){j({m\'{^*{%&{R){V\'{L*{?\'{5({)*{.\'{.){3${k${6\'{8&{t/{7({@\'{S({K\'{g*{#){7&{l){"\'{1({)({=${h&{m*{B({(,{_*{h\'{R\'{y&{i%{`\'{B&{O){e\'{P&{$%{v){w${`1{c\'{t*{G&{z){H.{i.{^+{?({^*{<\'{H({.({5&{(&{^({s({@){I\'{C&{o\'{[\'{A${H%{_){3&{E%{W({V*{$&{7',
+      '!!%""{7{(P{z({,%{r\'{w({x+{p\'{$\'{N#{D,{r({G&{m%{#&{+${U+{Y%{@%{W({$#{L({A&{2+{\\%{N&{[){6%{<*{E&{5%{"){G&{=){@\'{F+{4\'{=&{z%{-*{#({:${r\'{N\'{7%{l&{x){f+{<&{(%{d-{:%{\'%{C){G){g){A&{H&{E%{A%{\\({4%{n%{C\'{G\'{P${,\'{7%{Z.{I\'{k\'{l\'{d&{M({3\'{2({E${R${-\'{j%{E,{6&{i){n\'{=${z\'{z%{d%{n\'{/\'{g%{B%{.&{Z&{_0{:*{P&{X%{?#{q({E&{P\'{V\'{j%{[({V*{]&{g,{k%{a*{o%{p\'{s({p%{d({0&{U#{D-{$({m%{R\'{<\'{5({L*{F&{W#{h${8%{0${F${S${`\'{A){a&{Q*{c({V){E%{U${i){##{v%{p${K#{Y({0({,({H%{U&{w&{)'])
+
+
+
+
+    sc.parallelize(comboset,2).map(f).
 
 
     v2=voxes[5].convertData(np.array([5.5, 1.1]), intRes = 10.0, minVal = -1.0)
