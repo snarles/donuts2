@@ -6,7 +6,7 @@
 import numpy as np
 
 
-# In[1]:
+# In[4]:
 
 class TestClass(object):
     a = 5
@@ -41,8 +41,12 @@ def ints2str(zs):
     return ''.join(int2str(z) for z in zs)
 
 def str2ints(st): 
-    st = list([st])[0] # somehow got a list here
-    os = [ord(c)-33 for c in st]
+    #st = list([st])[0] # somehow got a list here
+    os = []
+    for c in st:
+        if len(c) > 1:
+            print("ERROR: THIS IS NOT A STRING: " + st)
+        os.append(ord(c[0])-33)
     zs = []
     counter = 0
     while counter < len(os):
@@ -63,7 +67,7 @@ def str2array(st):
     return arr
 
 
-# In[60]:
+# In[6]:
 
 class Voxel(tuple):
     'A class representing a single 3-dimensional voxel.      Attributes are coordinates (key) and data. Optionally: cached data.    Internally, it uses characters to compress integer-valued data.     Initialize with a compressed string of CFF format.'
@@ -103,6 +107,17 @@ class Voxel(tuple):
             self.intRes = intRes
         if minVal is not None:
             self.minVal = minVal
+
+
+# In[7]:
+
+#m = Voxel('asadadasfasf')
+#print(m.getCoords())
+
+
+# In[9]:
+
+ord(chr(56)[0])
 
 
 # In[ ]:
