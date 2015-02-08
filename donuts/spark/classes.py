@@ -42,11 +42,12 @@ def ints2str(zs):
 
 def str2ints(st): 
     #st = list([st])[0] # somehow got a list here
-    os = []
-    for c in st:
-        if len(c) > 1:
-            print("ERROR: THIS IS NOT A STRING: " + st)
-        os.append(ord(c[0])-33)
+    os = [ord(c[0])-33 for c in st]
+    #os = []
+    #for c in st:
+    #    if len(c) > 1:
+    #        print("ERROR: THIS IS NOT A STRING: " + st)
+    #    os.append(ord(c[0])-33)
     zs = []
     counter = 0
     while counter < len(os):
@@ -76,6 +77,8 @@ class Voxel(tuple):
     
     def __new__(cls, initString):
         nc = 3 # edit this when changing the number of coords
+        if len(initString) > 1: # constructed via Spark deserialization
+            initString = initString[1]
         ints = str2ints(initString)
         coords = tuple(ints[:nc])
         key = ints2str(coords)
