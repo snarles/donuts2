@@ -41,7 +41,7 @@ def ints2str(zs):
     return ''.join(int2str(z) for z in zs)
 
 def str2ints(st): 
-    st = list(st)[0] # somehow got a list here
+    st = list([st])[0] # somehow got a list here
     os = [ord(c)-33 for c in st]
     zs = []
     counter = 0
