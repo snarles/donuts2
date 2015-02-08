@@ -374,12 +374,11 @@ if __name__ == "__main__":
 
 # # Testing in Spark
 
-# In[20]:
+# In[21]:
 
 if __name__ == "__main__":
     import numpy.random as npr
     from donuts.spark.classes import Voxel
-    reload(donuts.spark.classes)
     from StringIO import StringIO
     si = StringIO()
     # define functions used in testing
