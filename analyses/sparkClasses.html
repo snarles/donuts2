@@ -1692,6 +1692,21 @@ In&nbsp;[1]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">donuts.spark.classes</span> <span class="kn">as</span> <span class="nn">ds</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[2]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
 <div class="highlight"><pre><span class="c"># Load some numpy data</span>
 </pre></div>
 
@@ -1703,7 +1718,7 @@ In&nbsp;[1]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[24]:
+In&nbsp;[3]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1753,14 +1768,131 @@ In&nbsp;[24]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[35]:
+In&nbsp;[4]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
 <div class="highlight"><pre><span class="n">csv1</span> <span class="o">=</span> <span class="n">readN</span><span class="p">(</span><span class="s">&#39;/root/data/old_data.csv&#39;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">cff1</span> <span class="o">=</span> <span class="n">readN</span><span class="p">(</span><span class="s">&#39;/root/data/chris2_comb.cff&#39;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
 </pre></div>
 
 </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[11]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">lala</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Voxel</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">lala</span><span class="o">.</span><span class="n">setConversion</span><span class="p">(</span><span class="n">minVal</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lala</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[12]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">voxes</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="n">cff1</span><span class="p">[:</span><span class="mi">10</span><span class="p">],</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[13]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">voxes</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">getCoords</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">
+    Out[13]:</div>
+
+
+<div class="output_text output_subarea output_pyout">
+<pre>
+(0, 0, 5)
+</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[24]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">v2</span><span class="o">=</span><span class="n">voxes</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">convertData</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">5.5</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">]),</span> <span class="n">intRes</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">minVal</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[25]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">v2</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">
+    Out[25]:</div>
+
+
+<div class="output_text output_subarea output_pyout">
+<pre>
+(&apos;!!&amp;&apos;, &apos;!!&amp;b6&apos;)
+</pre>
+</div>
+
+</div>
+
 </div>
 </div>
 
@@ -1772,173 +1904,7 @@ In&nbsp;[26]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre><span class="n">cff1</span> <span class="o">=</span> <span class="n">readN</span><span class="p">(</span><span class="s">&#39;/root/data/chris2_comb.cff&#39;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="define-a-voxel-class">Define a voxel class</h1>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[102]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-
-<span class="k">def</span> <span class="nf">int2str</span><span class="p">(</span><span class="n">z</span><span class="p">):</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">z</span> <span class="o">&lt;</span> <span class="mi">90</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">z</span><span class="o">+</span><span class="mi">33</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">resid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">z</span> <span class="o">%</span> <span class="mi">90</span><span class="p">)</span>
-        <span class="n">z</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">z</span><span class="o">-</span><span class="n">resid</span><span class="p">)</span><span class="o">/</span><span class="mi">90</span>
-        <span class="k">return</span> <span class="n">int2str</span><span class="p">(</span><span class="n">z</span><span class="p">)</span><span class="o">+</span><span class="nb">chr</span><span class="p">(</span><span class="mi">90</span><span class="o">+</span><span class="mi">33</span><span class="p">)</span><span class="o">+</span><span class="nb">chr</span><span class="p">(</span><span class="n">resid</span><span class="o">+</span><span class="mi">33</span><span class="p">)</span>
-    
-<span class="k">def</span> <span class="nf">ints2str</span><span class="p">(</span><span class="n">zs</span><span class="p">):</span>
-    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">int2str</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">zs</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">str2ints</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
-    <span class="n">os</span> <span class="o">=</span> <span class="p">[</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">-</span><span class="mi">33</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">st</span><span class="p">]</span>
-    <span class="n">zs</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">while</span> <span class="n">counter</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">os</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">os</span><span class="p">[</span><span class="n">counter</span><span class="p">]</span> <span class="o">==</span> <span class="mi">90</span><span class="p">:</span>
-            <span class="n">zs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">zs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">90</span> <span class="o">+</span> <span class="n">os</span><span class="p">[</span><span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-            <span class="n">counter</span> <span class="o">=</span> <span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">zs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="p">[</span><span class="n">counter</span><span class="p">])</span>
-        <span class="n">counter</span> <span class="o">=</span> <span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="k">return</span> <span class="n">zs</span>
-
-<span class="k">def</span> <span class="nf">csvrow2array</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="s">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;  &#39;</span><span class="p">,</span><span class="s">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)])</span>
-
-<span class="k">def</span> <span class="nf">str2array</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
-    <span class="n">pts</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;|&#39;</span><span class="p">)</span>
-    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">str2ints</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span> <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">pts</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
-    <span class="k">return</span> <span class="n">arr</span>
-
-<span class="k">class</span> <span class="nc">Voxel</span><span class="p">:</span>
-    <span class="s">&#39;A class representing a single 3-dimensional voxel.  </span><span class="se">\</span>
-<span class="s">    Attributes are coordinates (key) and data. Optionally: cached data.</span><span class="se">\</span>
-<span class="s">    Internally, it uses characters to compress integer-valued data.&#39;</span>
-    <span class="n">cached</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">dataString</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-    <span class="n">key</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-    <span class="n">intRes</span> <span class="o">=</span> <span class="mi">10000</span>
-    
-    <span class="k">def</span> <span class="nf">convertInts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ints</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dataString</span> <span class="o">=</span> <span class="n">ints2str</span><span class="p">(</span><span class="n">ints</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">floats</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ints</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">csvInts</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">csvFloats</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">intRes</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">intRes</span> <span class="o">=</span> <span class="n">intRes</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">csvFloats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
-            <span class="n">floats</span> <span class="o">=</span> <span class="n">csvrow2array</span><span class="p">(</span><span class="n">csvFloats</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">csvInts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
-            <span class="n">ints</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">csvrow2array</span><span class="p">(</span><span class="n">csvInts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">floats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">convertInts</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">floats</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">floats</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">intRes</span><span class="p">)]))</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">ints</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">convertInts</span><span class="p">(</span><span class="n">ints</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dataString</span> <span class="o">=</span> <span class="n">string</span>
-        <span class="n">ints</span> <span class="o">=</span> <span class="n">str2ints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataString</span><span class="p">)</span>
-        <span class="n">coords</span> <span class="o">=</span> <span class="p">(</span><span class="n">ints</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ints</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ints</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">ints2str</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-        
-    <span class="k">def</span> <span class="nf">getCoords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ints</span> <span class="o">=</span> <span class="n">str2ints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
-        <span class="n">coords</span> <span class="o">=</span> <span class="p">(</span><span class="n">ints</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ints</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ints</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">coords</span>
-    
-    <span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span>
-    
-    <span class="k">def</span> <span class="nf">toString</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataString</span>
-    
-    <span class="k">def</span> <span class="nf">getIntData</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">str2ints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataString</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">getFloatData</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ints</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">str2ints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataString</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">ints</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ints</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">intRes</span><span class="p">))])</span>
-    
-    <span class="k">def</span> <span class="nf">getArrayData</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">str2Array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataString</span><span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">setCache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cached</span> <span class="o">=</span> <span class="n">val</span>
-        
-    <span class="k">def</span> <span class="nf">getCache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cached</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="subclasses">subclasses</h2>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[75]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="c">#vox = Voxel(csvInts = csv1[500])</span>
-<span class="n">vox</span> <span class="o">=</span> <span class="n">Voxel</span><span class="p">(</span><span class="n">string</span> <span class="o">=</span> <span class="n">cff1</span><span class="p">[</span><span class="mi">500</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[76]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="n">vox</span><span class="o">.</span><span class="n">getCoords</span><span class="p">()</span>
+<div class="highlight"><pre><span class="n">v2</span><span class="o">.</span><span class="n">getData</span><span class="p">()</span>
 </pre></div>
 
 </div>
@@ -1950,12 +1916,12 @@ In&nbsp;[76]:
 
 
 <div class="output_area"><div class="prompt output_prompt">
-    Out[76]:</div>
+    Out[26]:</div>
 
 
 <div class="output_text output_subarea output_pyout">
 <pre>
-(0, 7, 17)
+array([ 5.5,  1.1])
 </pre>
 </div>
 
@@ -1968,11 +1934,11 @@ In&nbsp;[76]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[77]:
+In&nbsp;[8]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre><span class="n">vox</span><span class="o">.</span><span class="n">getIntData</span><span class="p">()</span>
+<div class="highlight"><pre><span class="nb">type</span><span class="p">(</span><span class="s">&#39;haha&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -1984,25 +1950,12 @@ In&nbsp;[77]:
 
 
 <div class="output_area"><div class="prompt output_prompt">
-    Out[77]:</div>
+    Out[8]:</div>
 
 
 <div class="output_text output_subarea output_pyout">
 <pre>
-array([   0,    7,   17,    1, 4046, 5710,  409, 1079,  922,  833, 1242,
-       1001, 1522,  844,  700,  955, 2173,  888, 1202,  966, 1167,  881,
-        392, 1126,  856, 1125,  779,  632,  729, 1108, 1877, 1632,  930,
-       1844,  762,  933, 1366,  599, 1395,  929,  984,  939,  854,  695,
-        836,  640, 1387,  856,  610,  563,  756, 1130, 2061, 1580,  802,
-       1037, 1582,  996,  986,  562,  617, 1686, 1068, 1275,  915,  813,
-        926,  884, 1330,  817, 1494,  575, 1080,  869, 1616,  732, 1648,
-        823,  639,  760, 1276, 1331,  899,  756,  759, 1658, 1058, 1592,
-        571,  858,  849,  867, 1329, 1274,  530,  814, 1013, 1414,  647,
-       1087,  509, 1255, 1708,  673, 1344, 1090,  465,  531,  704, 2220,
-       1323, 1219,  961, 1122, 1508,  903,  606,  880,  953, 1090,  620,
-        899,  656,  662,  770,  442, 3337, 1285,  769,  914, 1290, 1163,
-        795, 2086, 2051,  757, 1961,  885,  651, 1388, 1425, 1188,  469,
-       1286, 1162, 1462, 2285,  879,  534, 1259,  881,  908, 1141,  645])
+str
 </pre>
 </div>
 
@@ -2015,11 +1968,11 @@ array([   0,    7,   17,    1, 4046, 5710,  409, 1079,  922,  833, 1242,
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[78]:
+In&nbsp;[7]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre><span class="n">vox</span><span class="o">.</span><span class="n">toString</span><span class="p">()</span>
+<div class="highlight"><pre><span class="n">ds</span><span class="o">.</span><span class="n">Voxel</span><span class="p">(</span><span class="n">cff1</span><span class="p">[</span><span class="mi">10</span><span class="p">])</span>
 </pre></div>
 
 </div>
@@ -2031,12 +1984,12 @@ In&nbsp;[78]:
 
 
 <div class="output_area"><div class="prompt output_prompt">
-    Out[78]:</div>
+    Out[7]:</div>
 
 
 <div class="output_text output_subarea output_pyout">
 <pre>
-&apos;!(2&quot;M{w&#96;{I%{R,{z+{7*{8.{i,{,1{s*{C({g+{X9{.*{o.{A+{c-{x*{h%{A-{O*{O-{N){\\({#){*-{=5{n3{-+{?5{M){K+{B0{1\&apos;{\\0{N+{&gt;+{u+{H*{M({b*{;({+0{F*{O\&apos;{g\&apos;{8){E-{S7{r2{S){s,{P2{U,{\&apos;+{w\&apos;{7\&apos;{n3{c,{o/{0+{0*{$+{;*{k/{g*{(1{W\&apos;{D-{!*{\\2{w){-3{=*{.({*){I/{1/{h*{z){E){H3{G,{e2{_\&apos;{@*{Q*{H*{Z/{f/{/&amp;{q*{%,{80{a({2-{(&amp;{\\.{v3{y({L/{u-{+&amp;{0&amp;{r({k9{]/{&#96;.{R+{^-{K1{e+{$\&apos;{c*{g+{V-{+\&apos;{q*{z({;({A){S%{sF{(/{:){R+{//{?-{t){l8{17{h){F6{h*{l({60{G0{l.{3&amp;{4/{;-{s1{7:{D*{f&amp;{u.{z*{h+{)-{^({0&apos;
+(&apos;!&apos;, &apos;!&apos;)
 </pre>
 </div>
 
@@ -2049,14 +2002,33 @@ In&nbsp;[78]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[78]:
+In&nbsp;[16]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre> 
+<div class="highlight"><pre><span class="nb">list</span><span class="p">([</span><span class="s">&#39;a&#39;</span><span class="p">,</span><span class="s">&#39;b&#39;</span><span class="p">])</span>
 </pre></div>
 
 </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">
+    Out[16]:</div>
+
+
+<div class="output_text output_subarea output_pyout">
+<pre>
+[&apos;a&apos;, &apos;b&apos;]
+</pre>
+</div>
+
+</div>
+
 </div>
 </div>
 
@@ -2064,149 +2036,33 @@ In&nbsp;[78]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[78]:
+In&nbsp;[26]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre> 
+<div class="highlight"><pre><span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">([</span><span class="s">&#39;aa&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]]</span>
 </pre></div>
 
 </div>
 </div>
 </div>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
+<div class="output_wrapper">
+<div class="output">
 
-</div>
-</div>
-</div>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
+<div class="output_area"><div class="prompt output_prompt">
+    Out[26]:</div>
 
-</div>
-</div>
+
+<div class="output_text output_subarea output_pyout">
+<pre>
+[&apos;a&apos;, &apos;a&apos;]
+</pre>
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
 
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[78]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
 </div>
 </div>
 
@@ -2223,7 +2079,7 @@ In&nbsp;[78]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[97]:
+In&nbsp;[119]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -2284,7 +2140,7 @@ In&nbsp;[97]:
         <span class="n">ff</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="n">a_list</span><span class="p">,</span> <span class="n">n_parts</span><span class="p">)</span>
     
-    <span class="k">def</span> <span class="nf">parallellize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_list</span><span class="p">,</span> <span class="n">n_parts</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parallelize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_list</span><span class="p">,</span> <span class="n">n_parts</span><span class="p">):</span>
         <span class="n">n_items</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_list</span><span class="p">)</span>
         <span class="n">sz_part</span> <span class="o">=</span> <span class="n">n_items</span><span class="o">/</span><span class="n">n_parts</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
@@ -2411,11 +2267,11 @@ In&nbsp;[100]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[100]:
+In&nbsp;[121]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre> 
+<div class="highlight"><pre><span class="n">sc0</span> <span class="o">=</span> <span class="n">FakeSparkContext</span><span class="p">()</span>
 </pre></div>
 
 </div>
@@ -2502,6 +2358,45 @@ In&nbsp;[100]:
 <div class="input">
 <div class="prompt input_prompt">
 In&nbsp;[100]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre> 
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="test-spark-stuff">Test Spark stuff</h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[169]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre> 
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[135]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
