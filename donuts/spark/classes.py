@@ -374,41 +374,36 @@ if __name__ == "__main__":
 
 # # Testing in Spark
 
-# In[15]:
+# In[20]:
 
-#if __name__ == "__main__":
-import numpy.random as npr
-from donuts.spark.classes import Voxel
-reload(Voxel)
-from StringIO import StringIO
-si = StringIO()
-# define functions used in testing
-nvox = 100
-def gen_vox():
-    coords = npr.randint(0, 10, 3)
-    data = npr.randn(20)
-    return np.hstack([coords, data])
-# simulate text file
-rawvoxes= np.array([gen_vox() for ii in range(nvox)])
-np.savetxt(si, rawvoxes)
-rawdata = si.getvalue().strip().split('\n')
-voxes = [Voxel({'intRes': 3, 'csv_row': rawdat}) for rawdat in rawdata]
-np.set_printoptions(precision=2)
-print(rawvoxes[50])
-print("")
-print(voxes[50].toCsvString())
-print("")
-print(Voxel(voxes[50].bareCopy()).toCsvString())
-print("")
-print(Voxel(voxes[50].toString()).toCsvString())
-print("")
-keys = [k for (k, v) in voxes]
-print(keys)
-
-
-# In[2]:
-
-copysign
+if __name__ == "__main__":
+    import numpy.random as npr
+    from donuts.spark.classes import Voxel
+    reload(donuts.spark.classes)
+    from StringIO import StringIO
+    si = StringIO()
+    # define functions used in testing
+    nvox = 100
+    def gen_vox():
+        coords = npr.randint(0, 10, 3)
+        data = npr.randn(20)
+        return np.hstack([coords, data])
+    # simulate text file
+    rawvoxes= np.array([gen_vox() for ii in range(nvox)])
+    np.savetxt(si, rawvoxes)
+    rawdata = si.getvalue().strip().split('\n')
+    voxes = [Voxel({'intRes': 3, 'csv_row': rawdat}) for rawdat in rawdata]
+    np.set_printoptions(precision=2)
+    print(rawvoxes[50])
+    print("")
+    print(voxes[50].toCsvString())
+    print("")
+    print(Voxel(voxes[50].bareCopy()).toCsvString())
+    print("")
+    print(Voxel(voxes[50].toString()).toCsvString())
+    print("")
+    keys = [k for (k, v) in voxes]
+    print(keys)
 
 
 # In[ ]:
