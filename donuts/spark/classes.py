@@ -1,6 +1,8 @@
 
 # coding: utf-8
 
+# # Module
+
 # In[1]:
 
 import numpy as np
@@ -27,13 +29,13 @@ class TestTuple(tuple):
         return a + a
 
 
-# In[112]:
+# In[19]:
 
 def csvrow2array(st):
     return np.array([float(s) for s in st.replace(',',' ').replace('  ',' ').split(' ')])
 
 
-# In[113]:
+# In[41]:
 
 def int2str(z):
     """
@@ -82,6 +84,7 @@ def int2str(z):
       E.g. '!}"{"' == int2str(0) + '}' + int2str(91) denotes 91.0/(10**0) == 91.0
            '#}"{"' == int2str(2) + '}' + int2str(91) denotes 91.0/(10**2) == 0.91
     """
+    z = int(z)
     if (z < 0):
         return chr(124) + int2str(-z)
     if (z < 90):
@@ -164,7 +167,7 @@ def str2ints(st, maxlen = -1):
     return zs
 
 
-# In[120]:
+# In[42]:
 
 class CffStr(str):
     """
@@ -240,7 +243,7 @@ class MultiCffStr(CffStr):
         return self.getCffs()[0].getFloats()
 
 
-# In[122]:
+# In[43]:
 
 if __name__ == "__main__":
     c1 = CffStr({'floats': np.array([-5.1,2.2]), 'intRes': 2})
@@ -256,7 +259,7 @@ if __name__ == "__main__":
     print(m1.getCffs())
 
 
-# In[145]:
+# In[60]:
 
 class Voxel(tuple):
     """
@@ -270,9 +273,13 @@ class Voxel(tuple):
                 Same as option 1, with Value used as string
       Option 3) Initialize using a dictionary (initOpts)
                 Dictionary values:
-                  coords: a length 3 int tuple containing the coords
-                  floats: floating-point values
                   intRes: the numerical precision for floats
+                INCLUDE:
+                  csv_row: a row read from a CSV file
+                  ncoords: the number of coordinates in the CSV file, default 3
+                OR INCLUDE:
+                  coords: a tuple containing the coords
+                  floats: floating-point values
     """
     def __new__(cls, initOpts):
         if type(initOpts) == str:
@@ -286,6 +293,11 @@ class Voxel(tuple):
             key = CffStr(initOpts[0])
             value = CffStr(initOpts[1])
         if type(initOpts) == dict:
+            if initOpts.has_key('csv_row'):
+                ncoords = initOpts.get('ncoords', 3)
+                temp = csvrow2array(initOpts['csv_row'])
+                initOpts['coords'] = temp[:ncoords]
+                initOpts['floats'] = temp[ncoords:]
             key = CffStr(initOpts['coords'])
             value = CffStr(initOpts)
         kv = tuple((key, value))
@@ -311,9 +323,12 @@ class Voxel(tuple):
     
     def toString(self): # used for writing to flat files
         return str(self[0])+'~'+str(self[1])
+    
+    def toCsvString(self, delimiter=','): # used for writing to flat files
+        return delimiter.join([str(v) for v in np.hstack([self.getCoords(), self.getData()])])
 
 
-# In[146]:
+# In[61]:
 
 if __name__ == "__main__":
     m = Voxel({'coords': (1, 2, 3), 'floats': np.array([1.12, 3.3, -4.5]), 'intRes': 2})
@@ -323,7 +338,48 @@ if __name__ == "__main__":
     print(bc)
     m_clone = Voxel(bc)
     print(m, m_clone)
-    print(m.toString())
+    print(m.toCsvString())
+
+
+# In[62]:
+
+if __name__ == "__main__":
+    import numpy.random as npr
+    from StringIO import StringIO
+    si = StringIO()
+    # define functions used in testing
+    nvox = 100
+    def gen_vox():
+        coords = npr.randint(0, 10, 3)
+        data = npr.randn(20)
+        return np.hstack([coords, data])
+    # simulate text file
+    rawvoxes= np.array([gen_vox() for ii in range(nvox)])
+    np.savetxt(si, rawvoxes)
+    rawdata = si.getvalue().strip().split('\n')
+    voxes = [Voxel({'intRes': 3, 'csv_row': rawdat}) for rawdat in rawdata]
+
+
+# # Testing in Spark
+
+# In[4]:
+
+if __name__ == "__main__":
+    import numpy.random as npr
+    from donuts.spark.classes import Voxel
+    from StringIO import StringIO
+    si = StringIO()
+    # define functions used in testing
+    nvox = 100
+    def gen_vox():
+        coords = npr.randint(0, 10, 3)
+        data = npr.randn(20)
+        return np.hstack([coords, data])
+    # simulate text file
+    rawvoxes= np.array([gen_vox() for ii in range(nvox)])
+    np.savetxt(si, rawvoxes)
+    rawdata = si.getvalue().strip().split('\n')
+    voxes = [Voxel({'intRes': 3, 'csv_row': rawdat}) for rawdat in rawdata]
 
 
 # In[ ]:
