@@ -18,7 +18,7 @@ class TestClass(object):
 class Foo(tuple):
 
     def __new__ (cls, a):
-        return super(Foo, cls).__new__(cls, tuple(a[0][0:2], a[1][0:2]))
+        return super(Foo, cls).__new__(cls, tuple([a[0][0:2], a[1][0:2]]))
 
     def __init__(self, a):
         super(Foo, self).__init__(a)
