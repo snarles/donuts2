@@ -17,13 +17,12 @@ class TestClass(object):
     
 class Foo(tuple):
 
-    def __new__ (cls, a, b):
-        return super(Foo, cls).__new__(cls, tuple(b))
+    def __new__ (cls, a):
+        return super(Foo, cls).__new__(cls, tuple(a[0][0:2], a[1][0:2]))
 
-    def __init__(self, a, b):
-        super(Foo, self).__init__(a,b)
+    def __init__(self, a):
+        super(Foo, self).__init__(a)
         self.a=a
-        self.b=b
 
 
 # In[ ]:
