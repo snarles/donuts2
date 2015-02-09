@@ -191,6 +191,8 @@ class CffStr(str):
         value = 'emptyCFF'
         if type(initOpts) == str:
             value = initOpts
+        elif type(initOpts) == unicode:
+            value = str(initOpts)
         elif type(initOpts) == int:
             value = int2str(initOpts)
         elif str(type(initOpts)) in ["<type 'numpy.ndarray'>", "<type 'list'>", "<type 'tuple'>"]:
@@ -229,6 +231,8 @@ class MultiCffStr(CffStr):
         value = ''
         if type(initOpts) == str:
             value = initOpts
+        elif type(initOpts) == unicode:
+            value = str(initOpts)
         if type(initOpts) == list:
             value = '~'.join(initOpts)
         return str.__new__(cls, value)
@@ -284,7 +288,9 @@ class Voxel(tuple):
                   coords: a tuple containing the coords
                   floats: floating-point values
     """
-    def __new__(cls, initOpts):
+    def __new__(cls, initOpts):        
+        if type(initOpts) == unicode:
+            initOpts = str(initOpts)
         if type(initOpts) == str:
             temp = initOpts.split('~')
             key = CffStr(temp[0])
