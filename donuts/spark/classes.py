@@ -9,36 +9,12 @@ import numpy as np
 import math
 
 
-# In[29]:
+# In[9]:
 
-class TestClass(object):
-    a = 5
-    def __init__(self, a):
-        self.a = a
-    def getvalue():
-        return a
-    
-class TestTuple(tuple):
-    def __new__ (cls, a):
-        return super(TestTuple, cls).__new__(cls, tuple([a[:2], a[:2]]))
-
-    def __init__(self, a):
-        super(TestTuple, self).__init__(a)
-        self.a=a
-    
-    def getvalue(self):
-        return a + a
-
-
-# In[1]:
-
-def csvrow2array(st):
+def csv_row_to_array(st):
     return np.array([float(s) for s in st.replace(',',' ').replace('  ',' ').split(' ')])
 
-
-# In[5]:
-
-def int2str(z):
+def int_to_str(z):
     """
     Converts a int into an ASCII string, using a base-90 representation
     
@@ -49,33 +25,33 @@ def int2str(z):
     
     [Rule 1]: For z < 90, int2str(z) = chr(z + 33)
     
-      int2str(0)  == chr(33) == '!'
-      int2str(1)  == chr(34) == '"'
-      int2str(2)  == chr(35) == '#'
+      int_to_str(0)  == chr(33) == '!'
+      int_to_str(1)  == chr(34) == '"'
+      int_to_str(2)  == chr(35) == '#'
       ...
-      int2str(89) == chr(122) == 'z'
+      int_to_str(89) == chr(122) == 'z'
     
     [Rule 2]: Represent larger nonnegative numbers by joining digits with chr(123) == '{'
       90 == 1*90 + 0
-      int2str(90) == chr(34) + chr(123) + chr(33) == '"{!'
+      int_to_str(90) == chr(34) + chr(123) + chr(33) == '"{!'
                         '1'      'join'     '0'
     
       91 == 1*90 + 1 
-      int2str(91) == chr(34) + chr(123) + chr(34) == '"{"'
+      int_to_str(91) == chr(34) + chr(123) + chr(34) == '"{"'
                         '1'      'join'     '1'
     
       92 == 1*90 + 2 
-      int2str(92) == chr(34) + chr(123) + chr(35) == '"#"'
+      int_to_str(92) == chr(34) + chr(123) + chr(35) == '"#"'
                         '1'      'join'     '2'
     
     And so on for higher powers:
       16202 == 2*90**2 + 0*90 + 2
-      int2str(16202) == chr(35) + chr(123) + chr(33) + chr(123) + chr(35) == '#{!{#'
+      int_to_str(16202) == chr(35) + chr(123) + chr(33) + chr(123) + chr(35) == '#{!{#'
                          '2'      'join'     '0'        'join'      '2'
                          
     [Rule 3]: Represent negative numbers by prepending chr(124) == '|'
-      int2str(91) == '"{"'
-      int2str(-91) == '|"{"'      
+      int_to_str(91) == '"{"'
+      int_to_str(-91) == '|"{"'      
       
     [Note]:
       chr(123) == '{' is reserved for joining digits
@@ -87,15 +63,15 @@ def int2str(z):
     """
     z = int(z)
     if (z < 0):
-        return chr(124) + int2str(-z)
+        return chr(124) + int_to_str(-z)
     if (z < 90):
         return chr(z+33)
     else:
         resid = int(z % 90)
         z = int(z-resid)/90
-        return int2str(z)+chr(90+33)+chr(resid+33)
+        return int_to_str(z)+chr(90+33)+chr(resid+33)
     
-def ints2str(zs):
+def ints_to_str(zs):
     """
     Converts an array or list of ints to a string.
     
@@ -105,43 +81,52 @@ def ints2str(zs):
       str : the list of ints represented as a string
     
     Example:
-      int2str(100) == '"{+'
-      int2str(200) == '#{5'
-      ints2str([100, 200]) == '"{+#{5'
+      int_to_str(100) == '"{+'
+      int_to_str(200) == '#{5'
+      ints_to_str([100, 200]) == '"{+#{5'
     See int2str(z)
     """
-    return ''.join(int2str(z) for z in zs)
+    return ''.join(int_to_str(z) for z in zs)
 
-def floats2str(xs, intRes):
+def floats_to_str(xs, precision):
     """
     Converts an array or list of floats to a string.
     
     Inputs:
       xs : list of floats
-      intRes: controls the precision
-              the numerical precision will be equal to 1/(2**intRes)
+      precision: the numerical precision will be equal to 1/(10**intRes)
     Outputs:
       str : the list of floats represented as a string
     """
-    zs = np.array(xs * float(10**intRes), dtype=int)
-    return int2str(intRes) + '}' + ints2str(zs)
+    zs = np.array(xs * float(10**precision), dtype=int)
+    return int_to_str(precision) + '}' + ints_to_str(zs)
 
-def str2floats(stt):
+def multi_floats_to_str(xs_s, precision_s):
+    assert(len(xs_s)== len(precision_s))
+    return '~'.join([floats_to_str(xs_s[ii], precision_s[ii]) for ii in range(len(xs_s))])
+
+def str_to_floats(stt):
     """
     Recovers the list of ints from the string representation.
-    See ints2str(zs)
+    See ints_to_str(zs)
     
     Inputs:
       st: String composed of characters in [ord(33), ... ,ord(124)] == ['!',...,'~']
     """
     st = stt.split('}')
     if len(st)==1:
-        return np.array(str2ints(st[-1]), dtype=float)
+        return np.array(str_to_ints(st[-1]), dtype=float)
     if len(st)==2:
-        intRes = str2ints(st[0])[0]
-        return np.array(str2ints(st[-1]), dtype=float)/float(10**intRes)
-
-def str2ints(st, maxlen = -1):
+        precision = str_to_ints(st[0])[0]
+        return np.array(str_to_ints(st[-1]), dtype=float)/float(10**precision)
+    
+def str_to_multi_floats(sts):
+    """
+    Recovers a list of float arrays
+    """
+    return [str_to_floats(st) for st in sts.split('~')]
+    
+def str_to_ints(st, maxlen = -1):
     """
     Recovers the list of ints from the string representation.
     See ints2str(zs)
@@ -168,11 +153,11 @@ def str2ints(st, maxlen = -1):
     return [int(z) for z in zs]
 
 
-# In[6]:
+# In[22]:
 
 class CffStr(str):
     """
-    A class representing a float array represented as a compressed str.
+    A class representing a float array (or list thereof) represented as a compressed str.
     See functions ints2str, str2ints
     Intialization:
       Option 1) Initialize using a string
@@ -181,10 +166,13 @@ class CffStr(str):
                 Dictionary values:
                   value (optional): the compressed data string (of type str)
                                     if NOT included, must include 'coords' and 'floats' OR 'coords' and 'ints'
+                  cffs (optional): a list of cffs or strings
                   ints (optional):   an integer list or array
                   floats (optional): floating-point values
                                      if included, must also include intRes
-                  intRes (optional): the numerical precision is parts per 10**intRes
+                  multi_floats (optional): an array or list of floats
+                  precision (optional): the numerical precision is parts per 10**intRes
+                  
     """
     
     def __new__(cls, initOpts):
@@ -194,79 +182,59 @@ class CffStr(str):
         elif type(initOpts) == unicode:
             value = str(initOpts)
         elif type(initOpts) == int:
-            value = int2str(initOpts)
+            value = int_to_str(initOpts)
         elif str(type(initOpts)) in ["<type 'numpy.ndarray'>", "<type 'list'>", "<type 'tuple'>"]:
-            value = ints2str(initOpts)
+            value = ints_to_str(initOpts)
         elif type(initOpts) == dict:
             if initOpts.has_key('value'):
                 value = initOpts['value']
-            if initOpts.has_key('ints'):
-                value = ints2str(initOpts['ints'])
-            if initOpts.has_key('floats'):
-                assert(initOpts.has_key('intRes'))
-                value = floats2str(initOpts['floats'], initOpts['intRes'])
+            elif initOpts.has_key('cffs'):
+                value = '~'.join(initOpts['cffs'])
+            elif initOpts.has_key('ints'):
+                value = ints_to_str(initOpts['ints'])
+            elif initOpts.has_key('floats'):
+                assert(initOpts.has_key('precision'))
+                value = floats_to_str(initOpts['floats'], initOpts['precision'])
+            elif initOpts.has_key('multi_floats'):
+                assert(initOpts.has_key('precision'))
+                value = multi_floats_to_str(initOpts['multi_floats'], initOpts['precision'])
         elif 'CffStr' in str(type(initOpts)):
             value = str(initOpts)
         return str.__new__(cls, value)
     
-    def getValue(self):
+    def get_value(self):
         return str(self)
     
-    def getInts(self):
+    def get_ints(self):
+        assert('~' not in str(self))
         st = str(self).split('}')[-1]
-        return str2ints(st)
+        return str_to_ints(st)
     
-    def getFloats(self):
-        return str2floats(str(self))
+    def get_floats(self):
+        return np.hstack(str_to_multi_floats(str(self)))
     
-class MultiCffStr(CffStr):
-    """
-    A class representing multiple cff strings
-    See functions ints2str, str2ints
-    Intialization:
-      Option 1) Initialize using a string
-      Option 2) Initialize using a list of cffs
-    """
-    def __new__(cls, initOpts):
-        value = ''
-        if type(initOpts) == str:
-            value = initOpts
-        elif type(initOpts) == unicode:
-            value = str(initOpts)
-        if type(initOpts) == list:
-            value = '~'.join(initOpts)
-        return str.__new__(cls, value)
+    def get_multi_floats(self):
+        return str_to_multi_floats(str(self))
     
-    def getCffs(self):
-        return [CffStr(st) for st in str(self).split('~')]
-    
-    def getValue(self):
-        return str(self)
-    
-    def getInts(self):
-        return self.getCffs()[0].getInts()
-    
-    def getFloats(self):
-        return self.getCffs()[0].getFloats()
+    def get_array(self):
+        return np.array(str_to_multi_floats(str(self)))
 
 
-# In[7]:
+# In[23]:
 
 if __name__ == "__main__":
-    c1 = CffStr({'floats': np.array([-5.1,2.2]), 'intRes': 2})
+    c1 = CffStr({'floats': np.array([-5.1, 2.2, 1.3]), 'precision': 2})
     c2 = CffStr({'ints': [1, 2, 3]})
     c3 = CffStr((-121, 34122, 140))
+    c4 = CffStr({'cffs': [c1, c2, c3]})
+    print(c1.get_floats())
+    print(c2.get_floats())
+    print(c3.get_ints())
+    print(c4.get_array())
     
-    m1 = MultiCffStr([c1, c2, c3])
-    
-    print(c1.getFloats())
-    print(c2.getFloats())
-    print(c3.getInts())
-    
-    print(m1.getCffs())
 
 
-# In[5]:
+# In[27]:
 
 class Voxel(tuple):
     """
@@ -294,17 +262,14 @@ class Voxel(tuple):
         if type(initOpts) == str:
             temp = initOpts.split('~')
             key = CffStr(temp[0])
-            if len(temp) > 2:
-                value = MultiCffStr('~'.join(temp[1:]))
-            else:
-                value = CffStr(temp[1])
+            value = CffStr(temp[1])
         elif type(initOpts) == tuple: # constructed via Spark deserialization
             key = CffStr(initOpts[0])
             value = CffStr(initOpts[1])
         elif type(initOpts) == dict:
             if initOpts.has_key('csv_row'):
                 ncoords = initOpts.get('ncoords', 3)
-                temp = csvrow2array(initOpts['csv_row'])
+                temp = csv_row_to_array(initOpts['csv_row'])
                 initOpts['coords'] = temp[:ncoords]
                 initOpts['floats'] = temp[ncoords:]
             key = CffStr(initOpts['coords'])
@@ -314,40 +279,46 @@ class Voxel(tuple):
         return super(Voxel, cls).__new__(cls, tuple(kv))
     
     # creates a new voxel from float data
-    def convertData(self, floats, intRes, coords = None):
+    def convertData(self, floats, precision, coords = None):
         if coords is None:
-            coords = self.getCoords()
-        newVoxel = Voxel({'coords': self.getCoords(), 'floats': floats, 'intRes': intRes})
+            coords = self.get_coords()
+        newVoxel = Voxel({'coords': self.get_coords(), 'floats': floats, 'precision': precision})
         return newVoxel
     
-    def getCoords(self):
-        coords = tuple(self[0].getInts())
+    def get_coords(self):
+        coords = tuple(self[0].get_ints())
         return coords
     
-    def getData(self):
-        return self[1].getFloats()
+    def get_floats(self):
+        return self[1].get_floats()
+
+    def get_multi_floats(self):
+        return self[1].get_multi_floats()
+
+    def get_array(self):
+        return self[1].get_array()
     
-    def bareCopy(self):
+    def bare_copy(self):
         return (str(self[0]), str(self[1]))
     
-    def toString(self): # used for writing to flat files
+    def to_string(self): # used for writing to flat files
         return str(self[0])+'~'+str(self[1])
     
-    def toCsvString(self, delimiter=','): # used for writing to flat files
-        return delimiter.join([str(v) for v in np.hstack([self.getCoords(), self.getData()])])
+    def to_csv_string(self, delimiter=','): # used for writing to flat files
+        return delimiter.join([str(v) for v in np.hstack([self.get_coords(), self.get_floats()])])
 
 
-# In[6]:
+# In[28]:
 
 if __name__ == "__main__":
-    m = Voxel({'coords': (1, 2, 3), 'floats': np.array([1.12, 3.3, -4.5]), 'intRes': 2})
-    print(m.getCoords())
-    print(m.getData())
-    bc = m.bareCopy()
+    m = Voxel({'coords': (1, 2, 3), 'floats': np.array([1.12, 3.3, -4.5]), 'precision': 2})
+    print(m.get_coords())
+    print(m.get_floats())
+    bc = m.bare_copy()
     print(bc)
     m_clone = Voxel(bc)
     print(m, m_clone)
-    print(m.toCsvString())
+    print(m.to_csv_string())
 
 
 # In[7]:
