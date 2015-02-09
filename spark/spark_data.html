@@ -3,7 +3,7 @@
 <head>
 
 <meta charset="utf-8" />
-<title>proc_data_b</title>
+<title>spark_data</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
@@ -1676,100 +1676,14 @@ div#notebook {
   <div tabindex="-1" id="notebook" class="border-box-sizing">
     <div class="container" id="notebook-container">
 
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
+<div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
-In&nbsp;[53]:
 </div>
 <div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="kn">import</span> <span class="nn">sys</span>
-<span class="n">ind</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-</pre></div>
-
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="processing-data-uisng-spark">Processing data uisng Spark</h1>
 </div>
 </div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[51]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="n">full_chris1</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;/home/ubuntu/predator/8631_5_1_pfile/coil_images/&#39;</span><span class="o">+</span> <span class="s">&#39;coil_comb_ec.nii.gz&#39;</span><span class="p">]</span> <span class="o">+</span> \
-        <span class="p">[</span><span class="s">&#39;/home/ubuntu/predator/8631_5_1_pfile/coil_images/8631_5_coil&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;_ec.nii.gz&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">33</span><span class="p">)]</span>
-<span class="n">outnames1</span> <span class="o">=</span>   <span class="p">[</span><span class="s">&#39;/home/ubuntu/chris1/chris1_comb.cff&#39;</span><span class="p">]</span> <span class="o">+</span> \
-        <span class="p">[</span><span class="s">&#39;/home/ubuntu/chris1/chris1_coil&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.cff&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">33</span><span class="p">)]</span>
-
-<span class="n">full_chris2</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;/home/ubuntu/predator/8631_11_1_pfile/coil_images/&#39;</span><span class="o">+</span> <span class="s">&#39;coil_comb_ec.nii.gz&#39;</span><span class="p">]</span> <span class="o">+</span> \
-        <span class="p">[</span><span class="s">&#39;/home/ubuntu/predator/8631_11_1_pfile/coil_images/8631_11_coil&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;_ec.nii.gz&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">33</span><span class="p">)]</span>
-<span class="n">outnames2</span> <span class="o">=</span>   <span class="p">[</span><span class="s">&#39;/home/ubuntu/chris2/chris2_comb.cff&#39;</span><span class="p">]</span> <span class="o">+</span> \
-        <span class="p">[</span><span class="s">&#39;/home/ubuntu/chris2/chris2_coil&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.cff&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">33</span><span class="p">)]</span>
-
-<span class="n">innames</span> <span class="o">=</span> <span class="n">full_chris1</span> <span class="o">+</span> <span class="n">full_chris2</span>
-<span class="n">outnames</span> <span class="o">=</span> <span class="n">outnames1</span> <span class="o">+</span> <span class="n">outnames2</span>
-
-<span class="k">def</span> <span class="nf">vox2str</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">ii</span><span class="p">,</span> <span class="n">rawdata</span><span class="p">):</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">rawdata</span><span class="p">)</span>
-    <span class="n">dim0</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dims</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
-    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">dim0</span><span class="p">)</span>
-    <span class="n">v</span> <span class="o">=</span> <span class="n">rawdata</span><span class="p">[</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">:]</span>
-    <span class="k">return</span> <span class="n">Voxel</span><span class="p">({</span><span class="s">&#39;coords&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="s">&#39;intRes&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s">&#39;floats&#39;</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span><span class="o">.</span><span class="n">toString</span><span class="p">()</span>
-
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">nibabel</span> <span class="kn">as</span> <span class="nn">nib</span>
-<span class="kn">from</span> <span class="nn">donuts.spark.classes</span> <span class="kn">import</span> <span class="n">Voxel</span>
-<span class="k">def</span> <span class="nf">csv2cff</span><span class="p">(</span><span class="n">ind</span><span class="p">):</span>
-    <span class="n">inname</span> <span class="o">=</span> <span class="n">innames</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
-    <span class="n">outname</span> <span class="o">=</span> <span class="n">outnames</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
-    <span class="n">rawdata</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">inname</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
-    <span class="n">dims</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">rawdata</span><span class="p">)</span>
-    <span class="n">dim0</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dims</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
-    <span class="n">ndata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">dims</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
-    <span class="n">pdata</span> <span class="o">=</span> <span class="n">dims</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
-    <span class="n">sts</span> <span class="o">=</span> <span class="p">[</span><span class="n">vox2str</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">ii</span><span class="p">,</span> <span class="n">rawdata</span><span class="p">)</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">ndata</span><span class="p">)]</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sts</span><span class="p">))</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[52]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="n">csv2cff</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[60]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="n">fstr</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;python proc_data_b.py &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; &amp;&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">innames</span><span class="p">))]</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -1778,7 +1692,231 @@ In&nbsp;[1]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre><span class="c">#print(&#39;\n&#39;.join(fstr))</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">donuts.spark.classes</span> <span class="kn">as</span> <span class="nn">dc</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">add</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[137]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">parts</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">textfiles</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;chris2/chris2_coil&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.cff&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">33</span><span class="p">)]</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[5]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">sc</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">
+    Out[5]:</div>
+
+
+<div class="output_text output_subarea output_pyout">
+<pre>
+&lt;pyspark.context.SparkContext at 0x7f531d0a2690&gt;
+</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[138]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="c"># converts coil coords to regular coords, moving one coord over</span>
+<span class="c"># and extract B0 values</span>
+<span class="k">def</span> <span class="nf">coil_coords_conv</span><span class="p">(</span><span class="n">s</span><span class="p">):</span> 
+    <span class="n">inds_b0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">16</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">46</span><span class="p">,</span> <span class="mi">61</span><span class="p">,</span> <span class="mi">75</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">105</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">135</span><span class="p">,</span> <span class="mi">149</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ss</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;~&#39;</span><span class="p">)</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">str2ints</span><span class="p">(</span><span class="n">ss</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">CffStr</span><span class="p">(</span><span class="n">ss</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">getFloats</span><span class="p">()</span>
+        <span class="n">newdata</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">inds_b0</span><span class="p">]</span>
+        <span class="n">newcoords</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">coords</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">ns0</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">CffStr</span><span class="p">(</span><span class="n">newcoords</span><span class="p">)</span>
+        <span class="n">ns10</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">CffStr</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+        <span class="n">ns1</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">CffStr</span><span class="p">({</span><span class="s">&#39;intRes&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s">&#39;floats&#39;</span><span class="p">:</span> <span class="n">newdata</span><span class="p">})</span>
+        <span class="n">ans</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ns0</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">ns10</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;~&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ns1</span><span class="p">))</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">ans</span><span class="o">=</span> <span class="p">[</span><span class="s">&quot;ERROR&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">ans</span>
+<span class="k">def</span> <span class="nf">v2c</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">c2c</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">):</span>
+    <span class="n">vt</span> <span class="o">=</span> <span class="n">v1</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;~~&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">v2</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;~~&#39;</span><span class="p">)</span>
+    <span class="n">vt</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">vt</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&#39;~~&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">vt</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">str2multiVox</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;~~~&#39;</span><span class="p">)</span>
+    <span class="n">st2</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;~~&#39;</span><span class="p">)</span>
+    <span class="n">vs</span> <span class="o">=</span> <span class="p">[</span><span class="n">dc</span><span class="o">.</span><span class="n">Voxel</span><span class="p">(</span><span class="n">st3</span><span class="p">)</span> <span class="k">for</span> <span class="n">st3</span> <span class="ow">in</span> <span class="n">st2</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">vs</span>
+<span class="k">def</span> <span class="nf">toS</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;~~~&#39;</span><span class="o">+</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">align_check</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
+    <span class="n">ans</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vs</span> <span class="o">=</span> <span class="n">str2multiVox</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">getCoords</span><span class="p">()[:</span><span class="mi">3</span><span class="p">])</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">str2multiVox</span><span class="p">(</span><span class="n">smpl</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">coord</span> <span class="o">!=</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">combB0str</span><span class="p">(</span><span class="n">st</span><span class="p">):</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;~~~&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">vs</span> <span class="o">=</span> <span class="n">str2multiVox</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">key</span><span class="o">+</span><span class="s">&#39;~&#39;</span><span class="o">+</span><span class="s">&#39;~&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vs</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">st</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[67]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">smp</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">textFile</span><span class="p">(</span><span class="n">textfiles</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">takeSample</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">coil_coords_conv</span><span class="p">(</span><span class="n">smp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">
+    Out[67]:</div>
+
+
+<div class="output_text output_subarea output_pyout">
+<pre>
+(&apos;&quot;{:&quot;{2#&apos;, &apos;HEAD&quot;{:&quot;{2#&quot;~%}T|&quot;{/|-{i\&apos;{:){&amp;%{R*{/I${u3{X&apos;)
+</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[139]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">parts</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">combined_rdd</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">textFile</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">textfiles</span><span class="p">),</span> <span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">coil_coords_conv</span><span class="p">)</span><span class="o">.</span><span class="n">combineByKey</span><span class="p">(</span><span class="n">v2c</span><span class="p">,</span> <span class="n">c2c</span><span class="p">,</span> <span class="n">c2c</span><span class="p">)</span>
+<span class="n">combined_rdd</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">toS</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTextFile</span><span class="p">(</span><span class="s">&#39;out3.txt&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[113]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="c">#smp = sc.textFile(&#39;out3.txt&#39;, parts).takeSample(False, 10)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[140]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">sc</span><span class="o">.</span><span class="n">textFile</span><span class="p">(</span><span class="s">&#39;out3.txt&#39;</span><span class="p">,</span> <span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">align_check</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">add</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">
+    Out[140]:</div>
+
+
+<div class="output_text output_subarea output_pyout">
+<pre>
+0
+</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[141]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">sc</span><span class="o">.</span><span class="n">textFile</span><span class="p">(</span><span class="s">&#39;out3.txt&#39;</span><span class="p">,</span> <span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">combB0str</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTextFile</span><span class="p">(</span><span class="s">&#39;chris2_B0.cff&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
