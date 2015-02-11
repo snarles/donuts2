@@ -317,7 +317,7 @@ if __name__ == "__main__":
     print(np.shape(vp.rdd.first()[1]))
 
 
-# In[3]:
+# In[8]:
 
 if __name__ == "__main__":
     import numpy as np
@@ -346,16 +346,25 @@ if __name__ == "__main__":
     os.chdir('/root/ephemeral-hdfs/bin')
     os.system('./hadoop fs -rmr arr2.pickle')
     vp.save_as_pickle_file('arr2.pickle')
+    arr3 = npr.normal(0, 1, dims)
+    convscript(arr3, 'temp3.txt')
+    vp = VoxelPartition(textf = 'temp/temp3.txt', cont=sc)
+    tup = vp.rdd.takeSample(False, 1)[0]
+    coords = tup[0]
+    print(arr3[coords[0], coords[1], coords[2], 0:100:10])
+    print(tup[1][0, 0, 0, 0:100:10])
+    os.chdir('/root/ephemeral-hdfs/bin')
+    os.system('./hadoop fs -rmr arr3.pickle')
+    vp.save_as_pickle_file('arr3.pickle')
 
 
-# In[4]:
+# In[9]:
 
 if __name__ == "__main__":
-    main_arr = np.concatenate([arr1, arr2])
+    main_arr = np.concatenate([arr1, arr2], axis = 3)
     vpm = VoxelPartition(picklefs = ['arr1.pickle', 'arr2.pickle'], cont = sc)
-
-
-# In[ ]:
-
-
+    spm = vpm.rdd.takeSample(False, 1)[0]
+    coords = spm[0]
+    print(main_arr[coords[0], coords[1], coords[2],0:60:10])
+    print(spm[1][0, 0, 0, 0:60:10])
 
