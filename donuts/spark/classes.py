@@ -127,44 +127,6 @@ def txt_to_np(st):
     return tup
 
 
-# In[63]:
-
-arr = npr.normal(0, 1, (20, 20, 20, 15))
-
-
-# In[64]:
-
-sz = (10, 10, 10)
-arrs = partition_array3(arr, sz)
-strs = [_to_plain_str(subarr) for subarr in arrs]
-
-
-# In[70]:
-
-get_ipython().magic(u'pinfo np.savetxt')
-
-
-# In[92]:
-
-tup = arrs[0]
-st = np_to_txt(tup)
-
-
-# In[93]:
-
-tup2 = txt_to_np(st)
-
-
-# In[94]:
-
-np.shape(tup[1])
-
-
-# In[95]:
-
-np.shape(tup2[1])
-
-
 # ### Specialized RDD container classes
 
 # In[174]:
@@ -267,7 +229,7 @@ if __name__ == "__main__":
     print(np.shape(vp.rdd.first()[1]))
 
 
-# In[29]:
+# In[1]:
 
 if __name__ == "__main__":
     import numpy as np
