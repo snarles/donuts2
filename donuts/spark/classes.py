@@ -23,7 +23,7 @@ def np_to_str(a):
     """
     Converts an np array to a binary string without newline
     """
-    a = np.array(a, dtype = float16)
+    a = np.array(a, dtype = np.float16)
     si = StringIO()
     np.save(si, a)
     st =  si.getvalue()
@@ -171,7 +171,7 @@ class VoxelPartition:
 
 # # Testing
 
-# In[205]:
+# In[2]:
 
 if __name__ == "__main__":
     import numpy as np
