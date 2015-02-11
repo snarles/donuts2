@@ -118,8 +118,61 @@ def txt_to_np(st):
     """
     st = st.replace(' ','\n')
     seq = np.loadtxt(StringIO(st))
-    tup = (tuple(np.array(seq[:3], dtype=int)), np.reshape(seq[7:], tuple(seq[3:7])))
+    dims = seq[3:7]
+    coords = seq[:3]
+    data = seq[7:]
+    ndata = np.prod(dims)
+    tup = (tuple(np.array(coords, dtype=int)), np.reshape(data[:ndata], tuple(dims)))
     return tup
+
+
+# In[22]:
+
+if __name__ == "__main__":
+    import numpy as np
+    import numpy.random as npr
+    #from donuts.spark.classes import *
+    import os
+    import time
+    # function arguments
+    dims = (40, 40, 40, 20)
+    arr = npr.normal(0, 1, dims)
+    sz = (10, 10, 10)
+    tempf = 'temp1.txt'
+    # function 1
+    os.system('rm temp1.txt')
+    t1 = time.clock()
+    arrs = partition_array3(arr, sz)
+    strs = [np_to_txt(tup) for tup in arrs]
+    f = open(tempf, 'w')
+    f.write('\n'.join(strs))
+    f.close()
+    time1 = time.clock() - t1
+    # function 2
+    tempf = 'temp2.txt'
+    os.system('rm temp2.txt')
+    t1 = time.clock()
+    arrs = partition_array3(arr, sz)
+    lenmax = np.prod(sz) * np.shape(arr)[3]
+    flatarr = np.array([np.hstack([tup[0], np.shape(tup[1]), tup[1].ravel(),        np.zeros(lenmax - np.prod(np.shape(tup[1])))]) for tup in arrs])
+    np.savetxt(tempf, flatarr)
+    time2 = time.clock() - t1
+    print((time1, time2))
+
+
+# In[26]:
+
+if __name__ == "__main__":
+    # function 1
+    f = open('temp1.txt', 'r')
+    st1 = f.read().split('\n')
+    f.close()
+    f = open('temp2.txt', 'r')
+    st2 = f.read().split('\n')
+    f.close()
+    print(str(txt_to_np(st1[0]))[0:100])
+    print(str(txt_to_np(st2[0]))[0:100])
+    print(str(arrs[0])[0:100])
 
 
 # ### Specialized RDD container classes
@@ -186,11 +239,11 @@ def convscript(arr, tempf = 'temp.txt', sz = (10, 10, 10), hadoop_dir = '/root/e
     cont: spark context
     """
     arrs = partition_array3(arr, sz)
-    strs = [np_to_txt(tup) for tup in arrs]
+    arrs = partition_array3(arr, sz)
+    lenmax = np.prod(sz) * np.shape(arr)[3]
+    flatarr = np.array([np.hstack([tup[0], np.shape(tup[1]), tup[1].ravel(),        np.zeros(lenmax - np.prod(np.shape(tup[1])))]) for tup in arrs])
     os.chdir(hadoop_dir + '/bin')
-    f = open(tempf, 'w')
-    f.write('\n'.join(strs))
-    f.close()
+    np.savetxt(tempf, flatarr)
     print('Wrote to file...')
     os.system('./hadoop fs -mkdir '+tempf+' temp/'+tempf)
     os.system('./hadoop fs -rmr temp/'+tempf)
@@ -199,6 +252,31 @@ def convscript(arr, tempf = 'temp.txt', sz = (10, 10, 10), hadoop_dir = '/root/e
     os.system('rm '+tempf)
     print('Cleaning up...')
     return
+
+
+# In[27]:
+
+if __name__ == "__main__":
+    import numpy as np
+    import numpy.random as npr
+    #from donuts.spark.classes import *
+    import os
+    import time
+    # function arguments
+    dims = (40, 40, 40, 20)
+    arr = npr.normal(0, 1, dims)
+    sz = (10, 10, 10)
+    convscript(arr, 'temp.txt')
+
+
+# In[28]:
+
+if __name__ == "__main__":
+    rdd = sc.textFile('temp/temp.txt', 20).map(txt_to_np)
+    tup = rdd.takeSample(False, 1)[0]
+    coords = tup[0]
+    print(arr[coords[0], coords[1], coords[2], :])
+    print(tup[1][0, 0, 0, :])
 
 
 # ```
@@ -275,11 +353,6 @@ if __name__ == "__main__":
 if __name__ == "__main__":
     main_arr = np.concatenate([arr1, arr2])
     vpm = VoxelPartition(picklefs = ['arr1.pickle', 'arr2.pickle'], cont = sc)
-
-
-# In[5]:
-
-tup = vpm.rdd.first()
 
 
 # In[ ]:
