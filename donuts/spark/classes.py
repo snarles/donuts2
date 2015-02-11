@@ -3,7 +3,7 @@
 
 # # Module
 
-# In[ ]:
+# In[1]:
 
 import numpy as np
 import time
@@ -17,7 +17,7 @@ from donuts.spark.fake import *
 
 # ### Numpy conversion functions
 
-# In[ ]:
+# In[2]:
 
 def np_to_str(a):
     """
@@ -45,9 +45,14 @@ def str_to_part(iterator):
     return np.vstack([str_to_np(st) for st in sts])
 
 
+# In[68]:
+
+
+
+
 # ### Helper functions for data classes
 
-# In[203]:
+# In[150]:
 
 def partition_array3(arr, sz):
     """
@@ -100,14 +105,73 @@ def _sort_combine(tup):
     arr = np.concatenate(arrs, 3)
     return (tup[0], arr)
 
+def np_to_txt(tup):
+    """
+    Converts an np array to unraveled txt string
+    """
+    dims = np.shape(tup[1])
+    a = np.array(tup[1], dtype = np.float16).ravel()
+    si = StringIO()
+    np.savetxt(si, np.hstack([tup[0], dims, a]), fmt = '%.6e')
+    st =  si.getvalue()
+    st = st.replace('\n',' ')
+    return st
+
+def txt_to_np(st): 
+    """
+    Converts a binary string to an np array
+    """
+    st = st.replace(' ','\n')
+    seq = np.loadtxt(StringIO(st))
+    tup = (seq[:3], np.reshape(seq[7:], tuple(seq[3:7])))
+    return tup
+
+
+# In[63]:
+
+arr = npr.normal(0, 1, (20, 20, 20, 15))
+
+
+# In[64]:
+
+sz = (10, 10, 10)
+arrs = partition_array3(arr, sz)
+strs = [_to_plain_str(subarr) for subarr in arrs]
+
+
+# In[70]:
+
+get_ipython().magic(u'pinfo np.savetxt')
+
+
+# In[92]:
+
+tup = arrs[0]
+st = np_to_txt(tup)
+
+
+# In[93]:
+
+tup2 = txt_to_np(st)
+
+
+# In[94]:
+
+np.shape(tup[1])
+
+
+# In[95]:
+
+np.shape(tup2[1])
+
 
 # ### Specialized RDD container classes
 
-# In[204]:
+# In[174]:
 
 class VoxelPartition:
     
-    def __init__(self, rdd = None, cont = None, picklef = None, arr = None, sz = None,                  parts = 10, picklefs = None, inds = None):
+    def __init__(self, rdd = None, cont = None, picklef = None, sz = None,                  parts = 10, picklefs = None, inds = None, textf = None):
         # 1. Set up needded parameters
         if cont is None:
             cont = FakeSparkContext()
@@ -121,22 +185,24 @@ class VoxelPartition:
         # 2. form RDD
         if rdd is not None:
             self.rdd = rdd
-        elif arr is not None:
-            self.rdd = cont.parallelize(partition_array3(arr, sz), parts)
         elif picklefs is not None:
             rdds = []
             for ind in range(len(picklefs)):
                 if inds is None:
-                    rdd = cont.pickleFile(picklefs[ind], parts).map(lambda x : _aug_key(x, ind))
+                    evalst = 'rdd = cont.pickleFile(picklefs[indx], parts).map(lambda x : _aug_key(x, indx))'
                 else:
-                    rdd = cont.pickleFile(picklefs[ind], parts).map(lambda x : _u_filter_c(x, inds)).                        map(lambda x : _aug_key(x, ind))
+                    evalst = 'rdd = cont.pickleFile(picklefs[indx], parts).map(lambda x : _u_filter_c(x, inds)).                        map(lambda x : _aug_key(x, indx))'
+                eval(evalst.replace('indx', str(ind)))
                 rdd.takeSample(False, 1) # Force evaluation
                 rdds.append(rdd)
             new_rdd = cont.union(rdds).                combineByKey(lambda x : x, lambda x, y : x + y, lambda x, y: x + y)
             self.rdd = new_rdd.map(_sort_combine)                
         elif picklef is not None:
             self.rdd = cont.pickleFile(picklef, parts).map(_unpickled_to_subarr)
-    
+        elif textf is not None:
+            rt = cont.textFile(textf, parts)
+            self.rdd = rt.map(txt_to_np)
+
     # computes a function on each voxel and returns an RDD with that result
     def compute_quantity(self, func, inds = None):
         new_rdd = self.rdd.map(lambda x : _apply_func(x, func, inds))
@@ -153,19 +219,30 @@ class VoxelPartition:
     
 
 
-# In[ ]:
+# ### Script for storing an array to txt
 
+# In[101]:
 
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
+import os
+def convscript(arr, tempf = 'temp.txt', sz = (10, 10, 10), hadoop_dir = '/root/ephemeral-hdfs'):
+    """
+    hadoop_dir: no slash on the end, don't include /bin
+    cont: spark context
+    """
+    arrs = partition_array3(arr, sz)
+    strs = [np_to_txt(tup) for tup in arrs]
+    os.chdir(hadoop_dir + '/bin')
+    f = open(tempf, 'w')
+    f.write('\n'.join(strs))
+    f.close()
+    print('Wrote to file...')
+    os.system('./hadoop fs -mkdir '+tempf+' temp/'+tempf)
+    os.system('./hadoop fs -rmr temp/'+tempf)
+    os.system('./hadoop fs -put '+tempf+' temp/'+tempf)
+    print('Copied to hadoop... temp/' + tempf)
+    os.system('rm '+tempf)
+    print('Cleaning up...')
+    return
 
 
 # # Testing
@@ -190,7 +267,38 @@ if __name__ == "__main__":
     print(np.shape(vp.rdd.first()[1]))
 
 
+# In[29]:
+
+if __name__ == "__main__":
+    import numpy as np
+    import numpy.random as npr
+    from donuts.spark.classes import *
+    dims = (40, 40, 40, 20)
+    arr = npr.normal(0, 1, dims)
+    sz = (10, 10, 10)
+    convscript(arr, 'temp1.txt')
+    vp = VoxelPartition(textf = 'temp/temp1.txt', cont=sc)
+    tup = vp.rdd.takeSample(False, 1)[0]
+    coords = tup[0]
+    print(arr[coords[0], coords[1], coords[2], 0:100:10])
+    print(tup[1][0, 0, 0, 0:100:10])
+    vp.save_as_pickle_file('arr1.pickle')
+
+
 # In[ ]:
 
-
+if __name__ == "__main__":
+    import numpy as np
+    import numpy.random as npr
+    from donuts.spark.classes import *
+    dims = (40, 40, 40, 20)
+    arr = npr.normal(0, 1, dims)
+    sz = (10, 10, 10)
+    convscript(arr, 'temp2.txt')
+    vp = VoxelPartition(textf = 'temp/temp2.txt', cont=sc)
+    tup = vp.rdd.takeSample(False, 1)[0]
+    coords = tup[0]
+    print(arr[coords[0], coords[1], coords[2], 0:100:10])
+    print(tup[1][0, 0, 0, 0:100:10])
+    vp.save_as_pickle_file('arr2.pickle')
 
