@@ -103,11 +103,6 @@ def _sort_combine(tup):
 
 # ### Specialized RDD container classes
 
-# In[ ]:
-
-
-
-
 # In[204]:
 
 class VoxelPartition:
@@ -136,7 +131,7 @@ class VoxelPartition:
                 else:
                     rdd = cont.pickleFile(picklefs[ind], parts).map(lambda x : _u_filter_c(x, inds)).                        map(lambda x : _aug_key(x, ind))
                 rdd.takeSample(False, 1) # Force evaluation
-                rdds[ind] = rdd
+                rdds.append(rdd)
             new_rdd = cont.union(rdds).                combineByKey(lambda x : x, lambda x, y : x + y, lambda x, y: x + y)
             self.rdd = new_rdd.map(_sort_combine)                
         elif picklef is not None:
