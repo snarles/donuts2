@@ -129,10 +129,14 @@ class VoxelPartition:
         elif arr is not None:
             self.rdd = cont.parallelize(partition_array3(arr, sz), parts)
         elif picklefs is not None:
-            if inds is None:
-                rdds = [cont.pickleFile(picklefs[ind], parts).map(lambda x : _aug_key(x, ind))                        for ind in range(len(picklefs))]
-            else:
-                rdds = [cont.pickleFile(picklefs[ind], parts).map(lambda x : _u_filter_c(x, inds)).                        map(lambda x : _aug_key(x, ind))                        for ind in range(len(picklefs))]
+            rdds = []
+            for ind in range(len(picklefs)):
+                if inds is None:
+                    rdd = cont.pickleFile(picklefs[ind], parts).map(lambda x : _aug_key(x, ind))
+                else:
+                    rdd = cont.pickleFile(picklefs[ind], parts).map(lambda x : _u_filter_c(x, inds)).                        map(lambda x : _aug_key(x, ind))
+                rdd.takeSample(False, 1) # Force evaluation
+                rdds[ind] = rdd
             new_rdd = cont.union(rdds).                combineByKey(lambda x : x, lambda x, y : x + y, lambda x, y: x + y)
             self.rdd = new_rdd.map(_sort_combine)                
         elif picklef is not None:
@@ -188,7 +192,7 @@ if __name__ == "__main__":
 #    means = voxPart.compute_quantity(np.mean, range(1,3))
 #    means.save_as_pickle_file('means.pickle')
 #    means2 = VoxelPartition(cont = sc, picklef = 'means.pickle')
-    np.shape(vp.rdd.first()[1])
+    print(np.shape(vp.rdd.first()[1]))
 
 
 # In[ ]:
