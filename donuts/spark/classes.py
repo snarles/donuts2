@@ -151,10 +151,10 @@ class VoxelPartition:
             rdds = []
             for ind in range(len(picklefs)):
                 if inds is None:
-                    evalst = 'rdd = cont.pickleFile(picklefs[indx], parts).map(lambda x : _aug_key(x, indx))'
+                    evalst = 'cont.pickleFile(picklefs[indx], parts).map(lambda x : _aug_key(x, indx))'
                 else:
-                    evalst = 'rdd = cont.pickleFile(picklefs[indx], parts).map(lambda x : _u_filter_c(x, inds)).                        map(lambda x : _aug_key(x, indx))'
-                eval(evalst.replace('indx', str(ind)))
+                    evalst = 'cont.pickleFile(picklefs[indx], parts).map(lambda x : _u_filter_c(x, inds)).                        map(lambda x : _aug_key(x, indx))'
+                rdd = eval(evalst.replace('indx', str(ind)))
                 rdd.takeSample(False, 1) # Force evaluation
                 rdds.append(rdd)
             new_rdd = cont.union(rdds).                combineByKey(lambda x : x, lambda x, y : x + y, lambda x, y: x + y)
@@ -229,14 +229,15 @@ if __name__ == "__main__":
     print(np.shape(vp.rdd.first()[1]))
 
 
-# In[1]:
+# In[4]:
 
 if __name__ == "__main__":
     import numpy as np
     import numpy.random as npr
     from donuts.spark.classes import *
+    import os
     dims = (40, 40, 40, 20)
-    arr = npr.normal(0, 1, dims)
+    arr1 = npr.normal(0, 1, dims)
     sz = (10, 10, 10)
     convscript(arr, 'temp1.txt')
     vp = VoxelPartition(textf = 'temp/temp1.txt', cont=sc)
@@ -244,23 +245,29 @@ if __name__ == "__main__":
     coords = tup[0]
     print(arr[coords[0], coords[1], coords[2], 0:100:10])
     print(tup[1][0, 0, 0, 0:100:10])
+    os.chdir('/root/ephemeral-hdfs/bin')
+    os.system('./hadoop fs -rmr arr1.pickle')
     vp.save_as_pickle_file('arr1.pickle')
-
-
-# In[ ]:
-
-if __name__ == "__main__":
-    import numpy as np
-    import numpy.random as npr
-    from donuts.spark.classes import *
-    dims = (40, 40, 40, 20)
-    arr = npr.normal(0, 1, dims)
-    sz = (10, 10, 10)
+    arr2 = npr.normal(0, 1, dims)
     convscript(arr, 'temp2.txt')
     vp = VoxelPartition(textf = 'temp/temp2.txt', cont=sc)
     tup = vp.rdd.takeSample(False, 1)[0]
     coords = tup[0]
     print(arr[coords[0], coords[1], coords[2], 0:100:10])
     print(tup[1][0, 0, 0, 0:100:10])
+    os.chdir('/root/ephemeral-hdfs/bin')
+    os.system('./hadoop fs -rmr arr2.pickle')
     vp.save_as_pickle_file('arr2.pickle')
+
+
+# In[5]:
+
+if __name__ == "__main__":
+    main_arr = np.concatenate([arr1, arr2])
+    vpm = VoxelPartition(picklefs = ['arr1.pickle', 'arr2.pickle'], cont = sc)
+
+
+# In[ ]:
+
+
 
