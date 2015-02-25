@@ -1718,15 +1718,15 @@ In&nbsp;[2]:
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="model">Model</h2>
 <ul>
-<li>Consider a single voxel, with measurements in directions \(d = 1, ... ,n_d\) and coils \(c = 1, ... , n_c\).</li>
+<li>Consider a single voxel, with measurements in directions <span class="math">\(d = 1, ... ,n_d\)</span> and coils <span class="math">\(c = 1, ... , n_c\)</span>.</li>
 <li>The B=0 case is treated as a direction (the 'zero' direction)</li>
-<li>The coils have correlated noise, \(\epsilon_dc\)</li>
-<li>The noise vector for a given direction \(\epsilon_d\) has covariance \(\Omega\), and \(\epsilon_d\) are independent for \(d = 1,..., n_d\)</li>
-<li>Each coil also has a specific sensitivity \(s_c \in [0,1]\)</li>
-<li>Each direction has an 'ideal signal' \(\mu_d\)</li>
-<li>Define the separate coil measurements as \[y_{dc} = (s_c\mu_d + \epsilon_{dc})^2\]</li>
-<li>Define the combined-coil measurement as \[Y_d = \sum_{c} y_{dc}\]</li>
-<li>There might be replicate measurements for a given direction.<br /> For example, if \(d=1\) is the B0 direction, and if 10 B0 measurements were taken, we would write them as \[Y_1^{(1)}, Y_1^{(2)}, ..., Y_1^{(10)}\] Reference: Aviv et al (2014), Wright and Wald (1997)</li>
+<li>The coils have correlated noise, <span class="math">\(\epsilon_dc\)</span></li>
+<li>The noise vector for a given direction <span class="math">\(\epsilon_d\)</span> has covariance <span class="math">\(\Omega\)</span>, and <span class="math">\(\epsilon_d\)</span> are independent for <span class="math">\(d = 1,..., n_d\)</span></li>
+<li>Each coil also has a specific sensitivity <span class="math">\(s_c \in [0,1]\)</span></li>
+<li>Each direction has an 'ideal signal' <span class="math">\(\mu_d\)</span></li>
+<li>Define the separate coil measurements as <span class="math">\[y_{dc} = (s_c\mu_d + \epsilon_{dc})^2\]</span></li>
+<li>Define the combined-coil measurement as <span class="math">\[Y_d = \sum_{c} y_{dc}\]</span></li>
+<li>There might be replicate measurements for a given direction.<br /> For example, if <span class="math">\(d=1\)</span> is the B0 direction, and if 10 B0 measurements were taken, we would write them as <span class="math">\[Y_1^{(1)}, Y_1^{(2)}, ..., Y_1^{(10)}\]</span> Reference: Aviv et al (2014), Wright and Wald (1997)</li>
 </ul>
 </div>
 </div>
@@ -1737,15 +1737,15 @@ In&nbsp;[2]:
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="problem">Problem</h2>
-<p>We wish to estimate \(\sigma^2_d = Var(Y_d)\) for a given direction.</p>
+<p>We wish to estimate <span class="math">\(\sigma^2_d = Var(Y_d)\)</span> for a given direction.</p>
 <h2 id="option-1-combined-coil">Option 1: Combined-coil</h2>
-<p>The first option is to make use of multiple <strong>combined-coil</strong> estimates for the same direction. That is, \[\hat{Var}(Y_d) = \frac{1}{m-1} \sum_{i=1}^m (Y_d^{(m)} - \bar{Y}_d)^2\] This is clearly an unbiased estimated.</p>
+<p>The first option is to make use of multiple <strong>combined-coil</strong> estimates for the same direction. That is, <span class="math">\[\hat{Var}(Y_d) = \frac{1}{m-1} \sum_{i=1}^m (Y_d^{(m)} - \bar{Y}_d)^2\]</span> This is clearly an unbiased estimated.</p>
 <h2 id="option-2-multiple-coil">Option 2: Multiple-coil</h2>
 <p>The second option is to estimate the covariances of the <em>separate coils</em>, and then make use of the fact that since</p>
-<p>\[Y_d = \sum_c y_{dc}\]</p>
+<p><span class="math">\[Y_d = \sum_c y_{dc}\]</span></p>
 <p>that</p>
-<p>\[Var(Y_d) = \sum_{c, c&#39;} Cov(y_{dc}, y_{dc&#39;})\]</p>
-<p>But how can we estimate the covariance matrix \(\Sigma_d = (Cov(y_{dc}, y_{dc&#39;}))_{cc&#39;}\)?</p>
+<p><span class="math">\[Var(Y_d) = \sum_{c, c&#39;} Cov(y_{dc}, y_{dc&#39;})\]</span></p>
+<p>But how can we estimate the covariance matrix <span class="math">\(\Sigma_d = (Cov(y_{dc}, y_{dc&#39;}))_{cc&#39;}\)</span>?</p>
 <p>We can do so by combining information from <strong>multiple directions</strong> and <strong>multiple coils</strong>.</p>
 </div>
 </div>
@@ -1756,16 +1756,16 @@ In&nbsp;[2]:
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="estimating-the-covariance-for-multiple-coils">Estimating the covariance for multiple coils</h2>
-<p>Let us write the coil measurements in a \(n_d \times n_c\) matrix \(M\) \[
+<p>Let us write the coil measurements in a <span class="math">\(n_d \times n_c\)</span> matrix <span class="math">\(M\)</span> <span class="math">\[
 M = \begin{bmatrix}
 y_{11} &amp; ...&amp; y_{1 c} &amp; ... &amp; y_{1 n_c} \\
 ...&amp; ... &amp; ... &amp; ...&amp; ... \\
 y_{d1} &amp; ...&amp; y_{dc} &amp; ... &amp; y_{d n_c} \\
 ... &amp; ... &amp; ...&amp; ... &amp; ... \\
 y_{n_d 1} &amp; ...&amp; y_{n_d c} &amp; ... &amp; y_{n_d n_c}\end{bmatrix}
-\]</p>
-<p>The first step is to estimate \(E(y_{dc})\) . To do so, note that \[E[y_{dc}] = s_c^2 \mu_d^2 + \sigma^2_d\] where \(\sigma^2_d = Var(\epsilon_{dc})\) (assumed constant for a given direction).</p>
-<p>Therefore \[
+\]</span></p>
+<p>The first step is to estimate <span class="math">\(E(y_{dc})\)</span> . To do so, note that <span class="math">\[E[y_{dc}] = s_c^2 \mu_d^2 + \sigma^2_d\]</span> where <span class="math">\(\sigma^2_d = Var(\epsilon_{dc})\)</span> (assumed constant for a given direction).</p>
+<p>Therefore <span class="math">\[
 E(M) = 
 \begin{bmatrix}
 \mu_1^2 s_1^2 + \sigma^2_1 &amp; ...&amp; \mu_1^2 s_c^2 + \sigma^2_1 &amp; ... &amp; \mu_1^2 s_{n_c}^2  + \sigma^2_1\\
@@ -1774,15 +1774,15 @@ E(M) =
 ... &amp; ... &amp; ...&amp; ... &amp; ... \\
 \mu_{n_d}^2 s_1^2 +\sigma^2_{n_d} &amp; ...&amp; \mu_{n_d}^2 s_c^2+\sigma^2_{n_d} &amp; ... &amp; \mu_{n_d}^2 s_{n_c}^2+\sigma^2_{n_d}
 \end{bmatrix}
-\] <strong>which is a rank two matrix.</strong></p>
-<p>That is, \[
+\]</span> <strong>which is a rank two matrix.</strong></p>
+<p>That is, <span class="math">\[
 E(M) = 
 \begin{bmatrix}\sigma^2_1 \\ ... \\ \sigma^2_d \end{bmatrix} \begin{bmatrix}1 &amp; ... &amp; 1\end{bmatrix} + 
 \begin{bmatrix}\mu_1^2 \\ ... \\ \mu_{n_d}^2\end{bmatrix} \begin{bmatrix}s_1^2 &amp; ... &amp; s_{n_c}^2\end{bmatrix}
-\]</p>
+\]</span></p>
 <h3 id="therefore-estimate-em-by-the-rank-two-approximation-of-m.">Therefore, estimate E(M) by the rank-two approximation of M.</h3>
-<p>Let \(\hat{M}\) denote this rank-two estimate, with entries \(m_{dc}\)</p>
-<p>Then estimate \(\hat{Cov}(y_{dc}, y_{dc&#39;}) = (y_{dc} - m_{dc})(y_{dc&#39;} - m_{dc&#39;})\).</p>
+<p>Let <span class="math">\(\hat{M}\)</span> denote this rank-two estimate, with entries <span class="math">\(m_{dc}\)</span></p>
+<p>Then estimate <span class="math">\(\hat{Cov}(y_{dc}, y_{dc&#39;}) = (y_{dc} - m_{dc})(y_{dc&#39;} - m_{dc&#39;})\)</span>.</p>
 <p><strong>Note:</strong> This is not an unbiased estimate, but we can work out a correction factor.</p>
 </div>
 </div>
