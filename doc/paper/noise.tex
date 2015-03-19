@@ -63,7 +63,12 @@ neighboring voxels: we use K-means clustering to partition the voxels
 and model the non-local noise within each partition via factor
 analysis.  We also estimate the fraction of noise contributed by each
 noise source to the preprocessed data by comparing the combined-coil
-MRI image to the MRI images from each of the 32 coils in our data.
+MRI image to the MRI images from each of the 32 coils in our data.  We
+validate our denoising procedure via two different metrics: prediction
+error on a replicate dataset, and reliability of the parameter
+estimates.  Since the parameter estimates have a variable number of
+fiber directions, we employ the earth mover's distance metric to
+measure reliability.
 \end{abstract}
 
 \section{Introduction}
