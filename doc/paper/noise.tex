@@ -1,0 +1,115 @@
+\documentclass[11pt]{article} 
+
+% packages with special commands
+\usepackage{amssymb, amsmath}
+\usepackage{epsfig}
+\usepackage{array}
+\usepackage{ifthen}
+\usepackage{color}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+%\usepackage{mathtools}
+\definecolor{grey}{rgb}{0.5,0.5,0.5}
+
+\begin{document}
+\newcommand{\tr}{\text{tr}}
+\newcommand{\E}{\textbf{E}}
+\newcommand{\diag}{\text{diag}}
+\newcommand{\argmax}{\text{argmax}}
+\newcommand{\argmin}{\text{argmin}}
+\newcommand{\Cov}{\text{Cov}}
+\newcommand{\Vol}{\text{Vol}}
+\pagestyle{fancy}
+
+\title{Removing noise-induced bias in diffusion MRI images}
+
+\author{Charles Zheng, Franco Pestilli, Yuval Benjamini, Robert Dougherty, Hua Wu, and Ariel Rokem}
+
+\maketitle
+
+\begin{abstract}
+Diffusion-weighted MR imaging (DWI) is the only method we currently
+have to measure connections between different parts of the human brain
+\emph{in vivo}.  To elucidate the structure of these connections,
+algorithms for tracking bundles of axonal fibers through the
+subcortical white matter rely on local estimates of the \emph{fiber
+  orientation distribution function} (fODF) in different parts of the
+brain. These functions describe the relative abundance of populations
+of axonal fibers crossing each other in each location.  The accuracy
+of the reconstruction is limited due to interference from various
+sources of noise, including physiological processes, motion of the
+subject's head, heat in the MRI coil, and eddy currents.  Although
+scanning protocols already include preprocessing steps to minimize the
+effects of motion and eddy currents, artifacts from motion correction
+are still visible in the preprocessed data, and furthermore,
+preprocessing protocols do not yet address how to correct for
+physiological and thermal noise.  We present a unified model for all
+sources of noise in diffusion MRI data, which partitions noise into
+two categories: \emph{local noise}, which includes noise sources like
+thermal noise which are not highly correlated between voxels, and
+\emph{non-local noise}, which includes noise sources such as
+physiological noise and motion correction artifacts, which affect
+multiple nearby.  Both types of noise induce \emph{bias} in the
+diffusion MRI signal: meaning that the average intensity over many
+repeated observations is systematically larger than the intensity as
+would be obtained from a noise-free setting.  This bias is problematic
+for existing reconstruction algorithms such as CSD and Bedpost-X which
+are derived under an assumption of \emph{unbiased} Gaussian noise.  We
+develop an algorithm for removing the bias from both local and
+non-local noise. Local noise can be removed in a straightforward
+manner by using soft-thresholding. Optimally removing non-local noise
+is more difficult because it requires pooling information from
+neighboring voxels: we use K-means clustering to partition the voxels
+and model the non-local noise within each partition via factor
+analysis.  We also estimate the fraction of noise contributed by each
+noise source to the preprocessed data by comparing the combined-coil
+MRI image to the MRI images from each of the 32 coils in our data.
+\end{abstract}
+
+\section{Introduction}
+
+
+\section{References}
+
+Le Bihan D, Mangin JF, Poupon C, Clark CA, Pappata
+S, Molko N, Chabriat H. (2001). Diffusion tensor imaging:
+concepts and applications. \emph{Journal of magnetic resonance imaging},
+13(4), 534-546.
+
+Tournier J-D, Calamante F, Connelly A (2007). Robust determination of the
+fibre orientation distribution in diffusion MRI: non-negativity constrained
+super-resolved spherical deconvolution. {\it Neuroimage} 35:1459–72
+
+Tournier, J.-D., Yeh, C.-H., Calamante, F., Cho, K.-H., Connelly, A., and
+Lin, C.-P. (2008). Resolving crossing fibres using constrained spherical
+deconvolution: validation using diffusion-weighted imaging phantom
+data. NeuroImage, 42: 617–25.
+
+Basser PJ. Quantifying errors in fiber-tract direction and diffusion tensor
+field maps resulting from MR noise. Proc. Int. Soc. Magn. Reson. Med. 1997
+
+Aganj I, Lenglet C, Jahanshad N, Yacoub E, Harel N, Thompson PM,
+Sapiro G. (2011). A Hough transform global probabilistic approach to
+multiple-subject diffusion MRI tractography. \emph{Medical image
+  analysis}, 15(4), 414-425.
+
+Frank L. Anisotropy in high angular resolution diffusion-weighted
+MRI.  \emph{Magnetic Resonance in Medicine} Volume 45, Issue 6, pages
+935–939, June 2001
+
+Dell’Acqua F, Rizzo G, Scifo P, Clarke RA, Scotti G, Fazio F (2007). A
+model-based deconvolution approach to solve fiber crossing in
+diffusion-weighted MR imaging. {\it IEEE Trans Biomed Eng} 54:462–72
+
+Behrens TEJ, Berg HJ, Jbabdi S, Rushworth MFS, and Woolrich MW (2007).  Probabilistic
+diffusion tractography with multiple fiber orientations: What can we
+gain?  {\it NeuroImage} (34):144-45.
+
+Gudbjartsson, H., and Patz, S. (1995). The Rician distribution of noisy MR
+data. {\it Magn Reson Med}. 34: 910–914.
+
+Rokem A, Yeatman J, Pestilli F, Kay K, Mezer A, van der Welt S,
+Wandell B.  (2013). Evaluating the accuracy of models of diffusion MRI
+in white matter.  Submitted.
+
+\end{document}
