@@ -75,7 +75,8 @@ Meanwhile, we have the following algorithm due to Jaggi (2010) for minimizing co
 
 Requirements
 
-```{r}
+
+```r
 library(pracma)
 library(magrittr)
 library(nnls)
@@ -84,7 +85,8 @@ library(parallel)
 
 Let X be randomly generated, B sparse, E rank 2.
 
-```{r}
+
+```r
 n <- 30
 p <- 20
 v <- 10
@@ -99,7 +101,8 @@ Y <- mu + sigma * randn(n, v)
 ```
 
 ### Use NNLS to recover B
-```{r}
+
+```r
 multi_nnls <- function(X, Y, mc.cores = 3) {
   v <- dim(Y)[2]
   bs <- mclapply(1:v, function(i) nnls(X, Y[, i])$x, mc.cores = mc.cores)
@@ -111,9 +114,14 @@ mu_nnls <- X %*% B_nnls
 sum((mu_nnls - mu)^2)
 ```
 
+```
+## [1] 0.5190064
+```
+
 ### Use biconvex optimization to recover B
 
-```{r}
+
+```r
 biconvex_opt <- function(X, Y, rk = 2, maxits = 10) {
   # initializiation
   n <- dim(Y)[1]
@@ -168,11 +176,15 @@ biconvex_opt <- function(X, Y, rk = 2, maxits = 10) {
   E <- matrix(res$Uvec, n, rk) %*% matrix(res$Vvec, rk, v)
   list(B = B, E = E, mu = X %*% B, resid = Y - X %*% B - E, objs = objs)
 }
-res_bc <- biconvex_opt(X, Y, 1, 10)
+res_bc <- biconvex_opt(X, Y, rk, 10)
 B_bc <- res_bc$B
 #Check denoising error
 mu_bc <- X %*% B_bc
 sum((mu_bc - mu)^2)
+```
+
+```
+## [1] 49075.65
 ```
 
 The biconvex problem suffers from severe overfitting.
