@@ -90,12 +90,14 @@ p <- 20
 v <- 10
 sparsity <- 0.1
 sigma <- 0.1
-rk <- 2
+rk <- 3
 X <- randn(n, p) %>% abs
 B <- randn(p, v) %>% abs * (rand(p, v) < sparsity)
-E <- sigma/rk * randn(n, rk) %*% randn(rk, v)
+U <- sqrt(sigma/rk) * randn(n, rk)
+V <- sqrt(sigma/rk) * randn(rk, v)
+E <- U %*% V
 mu <- X %*% B
-Y <- mu + sigma * randn(n, v)
+Y <- mu + E
 ```
 
 ### Use NNLS to recover B
@@ -108,7 +110,7 @@ multi_nnls <- function(X, Y, mc.cores = 3) {
 B_nnls <- multi_nnls(X, Y)
 #Check denoising error
 mu_nnls <- X %*% B_nnls
-sum((mu_nnls - mu)^2)
+(err_nnls <- sum((mu_nnls - mu)^2))
 ```
 
 ### Use biconvex optimization to recover B
@@ -166,14 +168,121 @@ biconvex_opt <- function(X, Y, rk = 2, maxits = 10) {
   }
   B <- matrix(res$Bvec, p, v)
   E <- matrix(res$Uvec, n, rk) %*% matrix(res$Vvec, rk, v)
-  list(B = B, E = E, mu = X %*% B, resid = Y - X %*% B - E, objs = objs)
+  list(B = B, E = E, mu = X %*% B, resid = Y - X %*% B - E, objs = objs,
+       U = matrix(res$Uvec, n, rk), V = matrix(res$Vvec, rk, v),
+       objective = objective)
 }
 res_bc <- biconvex_opt(X, Y, 1, 10)
+# compare true size of E with fitted size
+c(sum(E^2), sum(res_bc$E^2))
 B_bc <- res_bc$B
+# compare the objective of the truth with the objective
+c(res_bc$objective(as.numeric(B), as.numeric(U), as.numeric(V)),
+  min(res_bc$objs))
 #Check denoising error
 mu_bc <- X %*% B_bc
-sum((mu_bc - mu)^2)
+(err_bc <- sum((mu_bc - mu)^2))
 ```
 
-The biconvex problem suffers from severe overfitting.
+### Use regularized biconvex optimization to recover B
 
+Put an L2 penalty on $U$ and $V$ and also an L1 penalty on $B$.
+
+```{r}
+reg_biconvex_opt <- function(X, Y, rk = 2, maxits = 10,
+                             lambdaU = 0.1, lambdaV = 0.1,
+                             lambdaB = 0.1) {
+  # initializiation
+  n <- dim(Y)[1]
+  p <- dim(X)[2]
+  v <- dim(Y)[2]
+  U <- randn(n, rk)
+  V <- randn(rk, v)
+  B <- randn(p, v) %>% abs
+  res <- list(Bvec = as.numeric(B), 
+              Uvec = as.numeric(U),
+              Vvec = as.numeric(V))
+  Yvec <- as.numeric(Y)
+  Xkron <- diag(rep(1, v)) %x% X
+  # subroutines
+  objective <- function(Bvec, Uvec, Vvec) {
+    resid <- matrix(Y, n, v) - X %*% matrix(Bvec, p, v) -
+      matrix(Uvec, n, rk) %*% matrix(Vvec, rk, v)
+    sum(resid^2) + lambdaU * sum(Uvec^2) + lambdaV * sum(Vvec^2) + 
+      lambdaB * sum(Bvec)^2
+  }
+  biconvex_it1 <- function(Bvec, Uvec, Vvec) {
+    U <- matrix(Uvec, n, rk)
+    Yvec2 <- c(Yvec, rep(0, 1 + 2 * length(Vvec)))
+    Ukron <- eye(v) %x% U
+    supermat <- rbind(cbind(Xkron, Ukron, -Ukron),
+                      c(rep(sqrt(lambdaB), length(Bvec)), rep(0, 2 * length(Vvec))),
+                      cbind(matrix(0, 2 * length(Vvec), dim(Xkron)[2]),
+                            sqrt(lambdaV) * eye(2 * length(Vvec))))
+    ans <- nnls(supermat, Yvec2)$x
+    Bvec <- ans[1:(p * v)]
+    VvecP <- ans[p * v + (1:(v * rk))]
+    VvecN <- ans[p * v + v * rk + (1:(v * rk))]
+    Vvec <- VvecP - VvecN
+    list(Bvec = Bvec, Uvec = Uvec, Vvec = Vvec)
+  }
+  biconvex_it2 <- function(Bvec, Uvec, Vvec) {
+    V <- matrix(Vvec, rk, v)
+    Yvec2 <- c(Yvec, rep(0, 1 + 2 * length(Uvec)))
+    Vkron <- t(V) %x% eye(n)
+    supermat <- rbind(cbind(Xkron, Vkron, -Vkron),
+                      c(rep(sqrt(lambdaB), length(Bvec)), rep(0, 2 * length(Uvec))),
+                      cbind(
+                        matrix(0, 2 * length(Uvec), dim(Xkron)[2]),
+                        sqrt(lambdaU) * eye(2 * length(Uvec))
+                      ))
+    ans <- nnls(supermat, Yvec2)$x
+    Bvec <- ans[1:(p * v)]
+    UvecP <- ans[p * v + (1:(n * rk))]
+    UvecN <- ans[p * v + n * rk + (1:(n * rk))]
+    Uvec <- UvecP - UvecN
+    list(Bvec = Bvec, Uvec = Uvec, Vvec = Vvec)
+  }
+  # main loop
+  objs <- Inf
+  for (i in 1:maxits) {
+    (objs <- objs %>% c(do.call(objective, res)))
+    res <- do.call(biconvex_it1, res)
+    (objs <- objs %>% c(do.call(objective, res)))
+    res <- do.call(biconvex_it2, res)
+    (objs <- objs %>% c(do.call(objective, res)))
+  }
+  B <- matrix(res$Bvec, p, v)
+  E <- matrix(res$Uvec, n, rk) %*% matrix(res$Vvec, rk, v)
+  list(B = B, E = E, mu = X %*% B, resid = Y - X %*% B - E, objs = objs,
+       U = matrix(res$Uvec, n, rk), V = matrix(res$Vvec, rk, v),
+       objective = objective)
+}
+res_bc2 <- reg_biconvex_opt(X, Y, 2, 10, lambdaU = 0.001, lambdaV = 0.001,
+                            lambdaB = 0.0)
+# compare true size of E with fitted size
+c(sum(E^2), sum(res_bc2$E^2))
+B_bc2 <- res_bc2$B
+# compare the objective of the truth with the objective
+c(res_bc2$objective(as.numeric(B), as.numeric(U), as.numeric(V)),
+  min(res_bc2$objs))
+#Check denoising error
+mu_bc2 <- X %*% B_bc2
+(err_bc2 <- sum((mu_bc2 - mu)^2))
+```
+
+Better...?
+
+```{r}
+err_nnls
+err_bc
+err_bc2
+```
+
+### Nuclear norm optimization
+
+```{r}
+nuclear_opt <- function(X, Y, lambda, mc.cores = 3) {
+  
+}
+```
