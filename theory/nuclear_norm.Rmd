@@ -1,0 +1,73 @@
+---
+title: "NNLS with Nuclear Norm"
+author: "Charles Zheng"
+date: "06/13/2015"
+output: html_document
+---
+
+Consider the problem
+
+$$
+Y = XB + E
+$$
+where $Y_{n \times v}$, $X_{n \times p}$ are known, while $B_{p \times v} \geq 0$ and $E_{n \times v}$ low-rank are unknown.
+
+Our goal is to recover the unknown $B$ from observed $Y$ and $X$.
+We solve the convex relaxation
+$$
+\text{minimize } ||Y - XB - E||_F^2 \text{ subject to }B\geq 0,\ ||E||_* \leq c
+$$
+where $||\cdot||_*$ is the nuclear norm.
+
+Alternatively, define $P_C$ to be the projection onto the cone $C = \{V: V = XU\text{ for }U \geq 0\}$.
+Then one way of solving the optimization problem is to define $V = Y-E$ and solve
+$$
+\text{minimize } ||V - P_C V||^2_F \text{ subject to }||Y - V||_* \leq c
+$$
+then finding $B$ which minimizes $||V - XB||^2_F$ subject to $B \geq 0$.
+
+## General Facts
+
+The previous problem takes the form
+$$
+\text{minimize } ||v  - P_C v||^2 \text{ subject to }v \in S
+$$
+where $C$ and $S$ are convex sets.  Assume for now that $C$ is smooth, and that the interior of $C$ is nonempty.
+
+We can evaluate the gradient as follows.
+
+The property of the projection $P_C v$ is that $v - P_C v \perp P_C v - c$ for all $c \in C$.
+This implies that
+$$
+\frac{dP_c v}{dv} = (I-P_\delta)
+$$
+where $P_\delta$ is projection onto the line spanned by $v - P_C v$.
+
+$$
+\frac{d}{dv} ||v - P_C v||^2 = \frac{d}{dv} (v'v - 2v'P_C v + (P_C v)'(P_C v))
+$$
+$$
+= 2(v - P_C v ) - 2(I- P_\delta)v + 2(I - P_\delta)P_C v
+$$
+$$
+= 2(v - P_C v ) - 2(I- P_\delta)(v - P_C v) = 2(v - P_C v )
+$$
+since $(I - P_\delta) (v - P_C v) = 0$.
+
+## Algorithm
+
+Let us return to the specific problem
+$$
+\text{minimize } ||V - P_C V||^2_F \text{ subject to }||Y - V||_* \leq c
+$$
+
+As we can see, the gradient of the unconstrained problem is simply a multiple of $V - P_C V$.
+Meanwhile, we have the following algorithm due to Jaggi (2010) for minimizing convex objectives subject to nuclear norm constraint $||V||_* \leq c$
+
+* Initialize $V = 0$
+* For iteration $k = 1, ... $:
+* Let $\alpha = 1/k$
+* Evaulate the unconstrained gradient $G$
+* Let $H$ be the rank-1 approximation of $-G$, scaled so that $||H||_* = c$
+* Update $V = (1-\alpha) V + \alpha H$
+
