@@ -86,10 +86,11 @@ Let X be randomly generated, B sparse, E rank 2.
 
 ```{r}
 n <- 30
-p <- 20
-v <- 10
+p <- 40
+v <- 30
 sparsity <- 0.1
 sigma <- 0.1
+sigmaI <- 0.05 # isotropic noise
 rk <- 3
 X <- randn(n, p) %>% abs
 B <- randn(p, v) %>% abs * (rand(p, v) < sparsity)
@@ -97,7 +98,7 @@ U <- sqrt(sigma/rk) * randn(n, rk)
 V <- sqrt(sigma/rk) * randn(rk, v)
 E <- U %*% V
 mu <- X %*% B
-Y <- mu + E
+Y <- mu + E + sigmaI * randn(n, v)
 ```
 
 ### Use NNLS to recover B
@@ -172,7 +173,7 @@ biconvex_opt <- function(X, Y, rk = 2, maxits = 10) {
        U = matrix(res$Uvec, n, rk), V = matrix(res$Vvec, rk, v),
        objective = objective)
 }
-res_bc <- biconvex_opt(X, Y, 1, 10)
+res_bc <- biconvex_opt(X, Y, rk, 20)
 # compare true size of E with fitted size
 c(sum(E^2), sum(res_bc$E^2))
 B_bc <- res_bc$B
@@ -258,7 +259,7 @@ reg_biconvex_opt <- function(X, Y, rk = 2, maxits = 10,
        U = matrix(res$Uvec, n, rk), V = matrix(res$Vvec, rk, v),
        objective = objective)
 }
-res_bc2 <- reg_biconvex_opt(X, Y, 2, 10, lambdaU = 0.001, lambdaV = 0.001,
+res_bc2 <- reg_biconvex_opt(X, Y, rk, 20, lambdaU = 0.001, lambdaV = 0.001,
                             lambdaB = 0.0)
 # compare true size of E with fitted size
 c(sum(E^2), sum(res_bc2$E^2))
