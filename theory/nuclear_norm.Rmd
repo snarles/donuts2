@@ -271,18 +271,57 @@ mu_bc2 <- X %*% B_bc2
 (err_bc2 <- sum((mu_bc2 - mu)^2))
 ```
 
-Better...?
+
+
+### Nuclear norm optimization
+
+```{r}
+nnorm <- function(E) {
+  res <- svd(E, nu = 0, nv = 0)
+  sum(res$d)
+}
+
+rank1approx <- function(E) {
+  res <- svd(E, nu = 1, nv = 1)
+  res$u %*% t(res$v)
+}
+
+nuclear_opt <- function(X, Y, lambda, maxits = 10, mc.cores = 3) {
+  v <- dim(Y)[2]
+  p <- dim(X)[2]
+  n <- dim(X)[1]
+  Z <- Y
+  B <- multi_nnls(X, Z, mc.cores = mc.cores)
+  objective <- function(B, Z) {
+    c(sum((Z - X %*% B)^2), nnorm(Z - Y)/lambda)
+  }
+  objs <- objective(B, Z)
+  for (it in 1:maxits) {
+    # find the projection
+    B <- multi_nnls(X, Z, mc.cores = mc.cores)
+    Zh <- X %*% B
+    resid <- Z - Zh
+    alpha <- 1/it
+    Z <- Y + (1-alpha) * (Z - Y)  + alpha * lambda * rank1approx(-resid)
+    # objective
+    objs <- rbind(objs, objective(B, Z))
+  }
+  list(E = Z - Y, B = B, objs = objs, objective = objective)
+}
+# cheat by giving the true nuclear norm
+res_nn <- nuclear_opt(X, Y, nnorm(E)/2, 100)
+plot(res_nn$objs[, 1], type = "l", main = "Objective")
+plot(res_nn$objs[, 2], type = "l", main = "Constraint (max 1)")
+res_nn$objective(B, mu)
+mu_nn <- X %*% res_nn$B
+(err_nn <- sum((mu_nn - mu))^2)
+```
+
+### Comparison
 
 ```{r}
 err_nnls
 err_bc
 err_bc2
-```
-
-### Nuclear norm optimization
-
-```{r}
-nuclear_opt <- function(X, Y, lambda, mc.cores = 3) {
-  
-}
+err_nn
 ```
