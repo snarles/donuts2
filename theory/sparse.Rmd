@@ -11,13 +11,43 @@ library(magrittr)
 library(Matrix)
 
 # nnls where X is sparse
-nnlsSp <- function(X, y) {
-  
+nnlsSp <- function(X, y, tol = 1e-4) {
+  X <- Matrix(X, sparse = TRUE)
+  y <- Matrix(y)
+  ip <- t(y) %*% X
+  corr <- max(ip)
+  inds <- order(-ip)[1]
+  mags <- numeric()
+  while (corr > tol) {
+    xs <- X[, inds, drop = FALSE]
+    mags <- c(mags, 0)
+    ssp <- as.numeric(solve(t(xs) %*% xs, t(xs) %*% y))
+    while(min(ssp) < 0) {
+      temp <- which((ssp - mags) < 0)
+      alpha <- min(-mags[temp]/(ssp[temp] - mags[temp]) )
+      mags <- mags + alpha * (ssp - mags)
+      ind <- order(mags)[1]
+      inds <- inds[-ind]
+      xs <- xs[, -ind, drop = FALSE]
+      mags <- mags[-ind]
+      ssp <- as.numeric(solve(t(xs) %*% xs, t(xs) %*% y))
+    }
+    mags <- ssp
+    r <- y - xs %*% mags
+    ip <- t(r) %*% X
+    corr <- max(ip)
+    ind <- order(-ip)[1]
+    inds <- c(inds, ind)
+    #c(min(ssp), corr)
+  }
+  beta <- numeric(dim(X)[2])
+  beta[inds] <- mags
+  beta
 }
 
 n <- 50
 v <- 100
-p <- 30
+p <- 60
 X <- randn(n, p)
 B <- abs(randn(p, v))
 Y <- X %*% B
@@ -31,12 +61,11 @@ t1 <- proc.time()
 sol <- nnls(Xbig, Yvec)$x
 t2 <- proc.time()
 #ipSp <- as.numeric(Matrix(t(Yvec)) %*% XbigSp)
-sol2 <- nnls(XbigSp, Matrix(Yvec))$x
+sol2 <- nnlsSp(XbigSp, Matrix(Yvec))
 t3 <- proc.time()
 # time using Naive
 t2 - t1
 # time using sparse
 t3 - t2
-Norm(ip - as.numeric(ipSp))
-
+Norm(sol - sol2)
 ```
