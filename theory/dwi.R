@@ -8,6 +8,8 @@ library(magrittr)
 library(rgl)
 library(Rcpp)
 library(pracma)
+library(nnls)
+library(parallel)
 
 ## ** Functions for constructing spheres **
 
@@ -99,6 +101,47 @@ ou <- function(n, p = 1, theta = 0.5) {
 #sqrt(sum((theta^2) ^ (0:10000)))
 #plot3d(nmlzr(x), type = "l")
 
+## ** Optimization **
+
+multi_nnls <- function(X, Y, mc.cores = 3) {
+  v <- dim(Y)[2]
+  bs <- mclapply(1:v, function(i) nnls(X, Y[, i])$x, mc.cores = mc.cores)
+  do.call(cbind, bs)
+}
+
+nnorm <- function(E) {
+  res <- svd(E, nu = 0, nv = 0)
+  sum(res$d)
+}
+
+rank1approx <- function(E) {
+  res <- svd(E, nu = 1, nv = 1)
+  res$u %*% t(res$v)
+}
+
+nuclear_opt <- function(X, Y, lambda, maxits = 10, mc.cores = 3) {
+  v <- dim(Y)[2]
+  p <- dim(X)[2]
+  n <- dim(X)[1]
+  Z <- Y
+  B <- multi_nnls(X, Z, mc.cores = mc.cores)
+  objective <- function(B, Z) {
+    c(sum((Z - X %*% B)^2), nnorm(Z - Y)/lambda)
+  }
+  objs <- objective(B, Z)
+  for (it in 1:maxits) {
+    # find the projection
+    B <- multi_nnls(X, Z, mc.cores = mc.cores)
+    Zh <- X %*% B
+    resid <- Z - Zh
+    alpha <- 1/it
+    Z <- Y + (1-alpha) * (Z - Y)  + alpha * lambda * rank1approx(-resid)
+    # objective
+    objs <- rbind(objs, objective(B, Z))
+  }
+  list(E = Z - Y, B = B, objs = objs, objective = objective)
+}
+
 ####
 ## BVecs and candidates
 ####
@@ -107,6 +150,7 @@ set.seed(1)
 bvecs <- metasub(xyz, 0.0565, 100) %*% rand3()
 dim(bvecs)
 plot3d(bvecs)
+nb <- dim(bvecs)[1]
 
 set.seed(2)
 pts <- metasub(xyz, 0.009, 10)
@@ -121,6 +165,8 @@ plot3d(pts)
 kdir <- 3
 ## number of voxels
 n <- 200
+## kappa
+kappa <- 3
 ## correlation between directions
 theta <- 0.9
 ## correlation between weights
@@ -129,5 +175,24 @@ temp <- lapply(1:kdir, function(i) nmlzr(ou(n, 3)))
 dirs <- lapply(1:n, function(i) do.call(rbind, lapply(temp, function(v) v[i, ])))
 ws <- abs(ou(n, kdir, wcorr)) %>% {./rowSums(.)}
 ## generate means
-mus <- lapply(1:n, function(i) as.numeric(stetan(bvecs, dirs[[i]], 3) %*% ws[i, ]))
+mus <- lapply(1:n, function(i) as.numeric(stetan(bvecs, dirs[[i]], kappa) %*% ws[i, ]))
+Mu <- do.call(cbind, mus)
+# low-rank noise
+rk <- 1
+E <- 1.1 * randn(nb, rk) %*% randn(rk, n)
+nnorm(E)
+Y <- Mu + 0.1 * randn(nb, n) + E
 
+####
+## Do the denoising
+####
+
+X <- stetan(bvecs, pts, kappa)
+B_nnls <- multi_nnls(X, Y)
+Mu_nnls <- X %*% B_nnls
+(err_nnls <- sum((Mu - Mu_nnls)^2))
+
+res_nn <- nuclear_opt(X, Y, 10.0, 100)
+B_nn <- res_nn$B
+Mu_nn <- X %*% B_nn
+(err_nn <- sum((Mu - Mu_nn)^2))
