@@ -11,9 +11,6 @@ library(pracma)
 library(magrittr)
 library(Matrix)
 
-X <- XbigSp
-y <- Yvec
-
 # nnls where X is sparse
 nnlsSp <- function(X, y, tol = 1e-4) {
   X <- Matrix(X, sparse = TRUE)
@@ -55,9 +52,11 @@ nnlsSp <- function(X, y, tol = 1e-4) {
   #Norm(as.numeric(yh1 - yh2))
   beta
 }
+```
 
+```{r}
 n <- 50
-v <- 2
+v <- 100
 p <- 60
 X <- randn(n, p)
 B <- abs(randn(p, v))
@@ -72,16 +71,16 @@ t1 <- proc.time()
 sol <- nnls(Xbig, Yvec)$x
 t2 <- proc.time()
 #ipSp <- as.numeric(Matrix(t(Yvec)) %*% XbigSp)
-sol2 <- nnlsSp(XbigSp, Matrix(Yvec))
+sol2 <- nnls(XbigSp, Matrix(Yvec))$x
 t3 <- proc.time()
+sol3 <- nnlsSp(XbigSp, Matrix(Yvec))
+t4 <- proc.time()
 # time using Naive
-t2 - t1
+(t2 - t1)[3]
 # time using sparse
-t3 - t2
+(t3 - t2)[3]
+# time using custom
+(t4 - t3)[3]
+Norm(sol - sol3)
 Norm(sol - sol2)
-inds <- which(sol2 > 0)
-xs <- XbigSp[, inds]
-resid <- Yvec - xs %*% sol2[inds]
-resid <- Yvec - Xbig %*% sol2
-max(t(resid) %*% XbigSp)
 ```
