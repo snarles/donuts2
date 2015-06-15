@@ -6,9 +6,13 @@ output: html_document
 Try out various sparse matrix formats
 
 ```{r}
+library(nnls)
 library(pracma)
 library(magrittr)
 library(Matrix)
+
+X <- XbigSp
+y <- Yvec
 
 # nnls where X is sparse
 nnlsSp <- function(X, y, tol = 1e-4) {
@@ -17,10 +21,9 @@ nnlsSp <- function(X, y, tol = 1e-4) {
   ip <- t(y) %*% X
   corr <- max(ip)
   inds <- order(-ip)[1]
-  mags <- numeric()
+  mags <- 0
   while (corr > tol) {
     xs <- X[, inds, drop = FALSE]
-    mags <- c(mags, 0)
     ssp <- as.numeric(solve(t(xs) %*% xs, t(xs) %*% y))
     while(min(ssp) < 0) {
       temp <- which((ssp - mags) < 0)
@@ -28,7 +31,7 @@ nnlsSp <- function(X, y, tol = 1e-4) {
       mags <- mags + alpha * (ssp - mags)
       ind <- order(mags)[1]
       inds <- inds[-ind]
-      xs <- xs[, -ind, drop = FALSE]
+      xs <- X[, inds, drop = FALSE]
       mags <- mags[-ind]
       ssp <- as.numeric(solve(t(xs) %*% xs, t(xs) %*% y))
     }
@@ -37,11 +40,19 @@ nnlsSp <- function(X, y, tol = 1e-4) {
     ip <- t(r) %*% X
     corr <- max(ip)
     ind <- order(-ip)[1]
-    inds <- c(inds, ind)
+    if (! ind %in% inds) {
+      inds <- c(inds, ind)
+      mags <- c(mags, 0)  
+    } else {
+      corr <- 0
+    }
     #c(min(ssp), corr)
   }
   beta <- numeric(dim(X)[2])
   beta[inds] <- mags
+  #yh1 <- X %*% Matrix(beta)
+  #yh2 <- X[, inds] %*% mags
+  #Norm(as.numeric(yh1 - yh2))
   beta
 }
 
@@ -68,4 +79,9 @@ t2 - t1
 # time using sparse
 t3 - t2
 Norm(sol - sol2)
+inds <- which(sol2 > 0)
+xs <- XbigSp[, inds]
+resid <- Yvec - xs %*% sol2[inds]
+resid <- Yvec - Xbig %*% sol2
+max(t(resid) %*% XbigSp)
 ```
