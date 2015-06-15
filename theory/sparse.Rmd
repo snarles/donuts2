@@ -46,7 +46,7 @@ nnlsSp <- function(X, y, tol = 1e-4) {
 }
 
 n <- 50
-v <- 100
+v <- 2
 p <- 60
 X <- randn(n, p)
 B <- abs(randn(p, v))
