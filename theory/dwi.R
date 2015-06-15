@@ -24,51 +24,66 @@ subsphere <- function(a, thres, rand = TRUE) {
 }
 
 
+
 cppFunction('NumericVector subIndices(NumericMatrix a, double thres) {
   int nrow = a.nrow();
   NumericVector out(nrow);
   out[0] = 0;
   int count = 1;
   for (int i = 1; i < nrow; i++) {
-    for (int j = 1; j < count; j ++) {
+    double minnorm = 4;
+    for (int j = 0; j < count; j ++) {
       double norm = 0;
       int s = out[j];
       for (int k = 0; k < 3; k++) {
         norm += (a(i, k) - a(s, k)) * (a(i, k) - a(s, k));
       }
-      if (norm < thres) {
-        out[count] = i;
-        count += 1;
+      if (norm < minnorm) {
+        minnorm = norm;
       }
+    }
+    if (minnorm > thres) {
+      out[count] = i;
+      count += 1;
     }
   }
   return out;
 }'
 )
 
-c <- subIndices(xyz, 0.1)
+
 
 metasub <- function(a, thres, nits = 5) {
   best <- 0
   ans <- numeric()
   for (i in 1:nits) {
-    xmat <- subsphere(a, thres)
+    a2 <- a[sample(dim(a)[1], dim(a)[1]), ]
+    xi <- subIndices(a2, thres)
+    xi <- xi[1:(which(xi == 0)[2] - 1)] + 1
+    xmat <- a2[xi, ]
     if (dim(xmat)[1] > best) {
+      best <- dim(xmat)[1]
       ans <- xmat
     }
   }
   ans
 }
 
-s1 <- metasub(xyz, 0.045, 30)
-dim(s1)
+dd <- dist(a2) %>% as.matrix
+od <- dd[xi, -xi]
+dim(od)
+max(apply(od, 2, min))^2
 
-s1 <- s1[1:150, ]
+set.seed(1)
+s1 <- metasub(xyz, 0.0565, 100)
+dim(s1)
 plot3d(s1)
 
-s2 <- subsphere(xyz, 0.01)
-s2 <- s2[1:750, ]
+set.seed(2)
+s2 <- metasub(xyz, 0.009, 10)
 dim(s2)
 plot3d(s2)
+
+
 
 
