@@ -83,29 +83,51 @@ cppFunction('NumericVector ouSub(NumericVector x, double theta) {
 
 plot(ouSub(rnorm(10000), .99), type = "l")
 
-ou <- function(n, p, theta = 0.5) {
-  wmat <- matrix(0, n, 2*n)
-  wmat <- (theta ^ (row(wmat) - col(wmat) + n)) * ((row(wmat)  + n + 1)> col(wmat))
-  w <- randn(2 * n, p)
-  x <- wmat %*% w
+ou <- function(n, p = 1, theta = 0.5) {
+  burnin <- floor(-7/log(theta))
+  sdz <- sqrt(1/(1 -(theta^2)))
+  x <- matrix(0, n, p)
+  for (i in 1:p) {
+    x[, i] <- ouSub(rnorm(n + burnin), theta)[burnin + (1:n)]/sdz
+  }
+  x
 }
-x <- ou(10000, 3, 0.999)
-plot3d(x[9000:10000, ], type = "l")
+
+#theta <- 0.999
+#x <- ou(10000, 3, theta)
+#sd(x[, 1])
+#sqrt(sum((theta^2) ^ (0:10000)))
+#plot3d(nmlzr(x), type = "l")
 
 ####
 ## BVecs and candidates
 ####
 
 set.seed(1)
-s1 <- metasub(xyz, 0.0565, 100) %*% rand3()
-dim(s1)
-#plot3d(s1)
+bvecs <- metasub(xyz, 0.0565, 100) %*% rand3()
+dim(bvecs)
+plot3d(bvecs)
 
 set.seed(2)
-s2 <- metasub(xyz, 0.009, 10)
-dim(s2)
-#plot3d(s2)
+pts <- metasub(xyz, 0.009, 10)
+dim(pts)
+plot3d(pts)
 
+####
+## Generate parameters
+####
 
-
+## number of fiber directions
+kdir <- 3
+## number of voxels
+n <- 200
+## correlation between directions
+theta <- 0.9
+## correlation between weights
+wcorr <- 0.99
+temp <- lapply(1:kdir, function(i) nmlzr(ou(n, 3)))
+dirs <- lapply(1:n, function(i) do.call(rbind, lapply(temp, function(v) v[i, ])))
+ws <- abs(ou(n, kdir, wcorr)) %>% {./rowSums(.)}
+## generate means
+mus <- lapply(1:n, function(i) as.numeric(stetan(bvecs, dirs[[i]], 3) %*% ws[i, ]))
 
