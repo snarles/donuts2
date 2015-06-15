@@ -1,0 +1,42 @@
+---
+title: "Sparse Matrices"
+output: html_document
+---
+
+Try out various sparse matrix formats
+
+```{r}
+library(pracma)
+library(magrittr)
+library(Matrix)
+
+# nnls where X is sparse
+nnlsSp <- function(X, y) {
+  
+}
+
+n <- 50
+v <- 100
+p <- 30
+X <- randn(n, p)
+B <- abs(randn(p, v))
+Y <- X %*% B
+Yvec <- Y %>% as.numeric
+Xbig <- eye(v) %x% X
+Xsp <- Matrix(X, sparse = TRUE)
+eyeSp <- Matrix(eye(v), sparse = TRUE)
+XbigSp <- eyeSp %x% Xsp
+t1 <- proc.time()
+#ip <- t(Yvec) %*% Xbig 
+sol <- nnls(Xbig, Yvec)$x
+t2 <- proc.time()
+#ipSp <- as.numeric(Matrix(t(Yvec)) %*% XbigSp)
+sol2 <- nnls(XbigSp, Matrix(Yvec))$x
+t3 <- proc.time()
+# time using Naive
+t2 - t1
+# time using sparse
+t3 - t2
+Norm(ip - as.numeric(ipSp))
+
+```
