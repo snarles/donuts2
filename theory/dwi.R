@@ -1,29 +1,17 @@
 ####
 ## Diffusion Imaging Simulation
 ####
+## Various functions
+####
 
 library(magrittr)
 library(rgl)
 library(Rcpp)
+library(pracma)
+
+## ** Functions for constructing spheres **
 
 xyz <- read.table('theory/4352.xyz', header = FALSE, sep = " ")[, -1] %>% as.matrix
-nxyz <- dim(xyz)[1]
-
-subsphere <- function(a, thres, rand = TRUE) {
-  if (rand) {
-    a <- a[sample(dim(a)[1], dim(a)[1]), ]
-  }
-  xmat <- a[1, , drop = FALSE]
-  for (i in 2:dim(a)[1]) {
-    d <- colSums((t(xmat) - a[i, ])^2)
-    if (min(d) > thres) {
-      xmat <- rbind(xmat, a[i, ])
-    }
-  }
-  xmat
-}
-
-
 
 cppFunction('NumericVector subIndices(NumericMatrix a, double thres) {
   int nrow = a.nrow();
@@ -51,8 +39,6 @@ cppFunction('NumericVector subIndices(NumericMatrix a, double thres) {
 }'
 )
 
-
-
 metasub <- function(a, thres, nits = 5) {
   best <- 0
   ans <- numeric()
@@ -69,20 +55,56 @@ metasub <- function(a, thres, nits = 5) {
   ans
 }
 
-dd <- dist(a2) %>% as.matrix
-od <- dd[xi, -xi]
-dim(od)
-max(apply(od, 2, min))^2
+rand3 <- function() svd(randn(3))$u
+#rand3() %>% {t(.) %*% .}
+
+## normalize rows
+nmlzr <- function(a) a/sqrt(rowSums(a^2))
+
+## ** Functions for diffusion design matrix **
+
+stetan <- function(bvecs, cands, kappa = 1) exp(-kappa * (bvecs %*% t(cands))^2)
+
+## ** Generation of random parameters
+
+## Ornstein-Uhlembeck process
+
+cppFunction('NumericVector ouSub(NumericVector x, double theta) {
+  int n = x.size();
+  NumericVector out(n);
+  double y = 0;
+  for (int i = 0; i < n; i++) {
+    double y = theta * y + x[i];
+    out[i] = y;
+  }
+  return(out);
+}'
+)
+
+plot(ouSub(rnorm(10000), .99), type = "l")
+
+ou <- function(n, p, theta = 0.5) {
+  wmat <- matrix(0, n, 2*n)
+  wmat <- (theta ^ (row(wmat) - col(wmat) + n)) * ((row(wmat)  + n + 1)> col(wmat))
+  w <- randn(2 * n, p)
+  x <- wmat %*% w
+}
+x <- ou(10000, 3, 0.999)
+plot3d(x[9000:10000, ], type = "l")
+
+####
+## BVecs and candidates
+####
 
 set.seed(1)
-s1 <- metasub(xyz, 0.0565, 100)
+s1 <- metasub(xyz, 0.0565, 100) %*% rand3()
 dim(s1)
-plot3d(s1)
+#plot3d(s1)
 
 set.seed(2)
 s2 <- metasub(xyz, 0.009, 10)
 dim(s2)
-plot3d(s2)
+#plot3d(s2)
 
 
 
