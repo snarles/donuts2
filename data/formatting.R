@@ -2,7 +2,7 @@ library(magrittr)
 
 tab <- read.table('~/predator//clusters.csv', header = FALSE, sep = " ")
 tab %<>% as.matrix
-table(tab[, 3])
+table(tab[, 1])
 tab[, 5] <- round(tab[, 5])
 nms <- list("cluster", c("x", "y", "z"), "wm", paste0("A", 1:150), paste0("B", 1:150),
             paste0("C", 1:46), paste0("D", 1:46))
