@@ -26,6 +26,7 @@ dv1 <- bv1[rownames(bv1) == "d", ]
 dv2 <- bv2[rownames(bv1) == "d", ]
 Xa <- stetan(dv1, pts, kappa)
 Xb <- stetan(dv1, pts, kappa)
+mc.cores = 7
 
 ###
 ## Analyze one cluster
@@ -38,9 +39,9 @@ Ya <- t(cl[, dA])
 Yb <- t(cl[, dB])
 nv <- dim(Ya)[2]
 
-Ba_nnls <- multi_nnls(Xa, Ya)
+Ba_nnls <- multi_nnls(Xa, Ya, mc.cores = mc.cores)
 YhB_nnls <- Xb %*% Ba_nnls
-Bb_nnls <- multi_nnls(Xb, Yb)
+Bb_nnls <- multi_nnls(Xb, Yb, mc.cores = mc.cores)
 YhA_nnls <- Xa %*% Bb_nnls
 
 (objA_nnls <- sum((Xa %*% Ba_nnls - Ya)^2))
@@ -53,8 +54,8 @@ YhA_nnls <- Xa %*% Bb_nnls
 
 # constrant for NN
 lambda <- 10
-resA_nn <- nuclear_opt(Xa, Ya, lambda)
-resB_nn <- nuclear_opt(Xb, Yb, lambda)
+resA_nn <- nuclear_opt(Xa, Ya, lambda, mc.cores = mc.cores)
+resB_nn <- nuclear_opt(Xb, Yb, lambda, mc.cores = mc.cores)
 
 Ba_nn <- resA_nn$B
 YhB_nn <- Xb %*% Ba_nn
