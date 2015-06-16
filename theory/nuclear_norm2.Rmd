@@ -1,0 +1,159 @@
+---
+title: "NNLS with Nuclear Norm"
+author: "Charles Zheng"
+date: "06/13/2015"
+output: html_document
+---
+
+Consider the problem
+
+$$
+Y = XB + E
+$$
+where $Y_{n \times v}$, $X_{n \times p}$ are known, while $B_{p \times v} \geq 0$ and $E_{n \times v}$ low-rank are unknown.
+
+Our goal is to recover the unknown $B$ from observed $Y$ and $X$.
+We solve the convex relaxation
+$$
+\text{minimize } ||Y - XB - E||_F^2 + \lambda ||E||_* \text{ subject to }B\geq 0
+$$
+where $||\cdot||_*$ is the nuclear norm.
+
+Alternatively, define $P_C$ to be the projection onto the cone $C = \{Z: Z = XU\text{ for }U \geq 0\}$.
+Then one way of solving the optimization problem is to define $Z = Y-E$ and solve
+$$
+\text{minimize } ||Z - P_C Z||^2_F + \lambda ||Y - Z||_*
+$$
+then finding $B$ which minimizes $||Z - XB||^2_F$ subject to $B \geq 0$.
+
+## Boosting algorithm
+
+We solve the problem by building a path of solutions with nuclear norm generally increasing from 0,
+and stopping when we have found the optimal nuclear norm.
+This type of algorithm can be seen in the chapter on boosting in Elements of Statistical Learning.
+Choosing $\epsilon$. At the $k$th iteration, let
+$$
+Z^{(k)} = \sum_{i=1}^k \epsilon \Delta_k
+$$
+where $\Delta_k$ is a rank-1 matrix with $||\Delta_k|| = 1$.
+Then the nuclear norm is bounded as $||Z^{(k)}||_* \leq k\epsilon$ but may be less.
+The $\Delta_k$ is chosen at each step as either:
+
+ * The negative of one of the previous $\Delta_1, ..., \Delta_{k-1}$
+ * A new direction, based on the rank-1 approximation of the negative unconstrained gradient.
+ 
+The negative unconstrained gradient in this problem is $P_C Z - Z$ (see `nuclear_norm.Rmd`).
+The new direction $\Delta_k$ is thus formed by taking the singular-value decomposition $P_C Z - Z = UDV^T$ and taking $\Delta_k = U_1 V_1^T$.
+The choice of whether to take the negative of a previous direction or a new direction is determined by minimizing the projection distance $||Z - P_C Z||$.
+
+The actual implementation is slightly different in the sense that $Z$ is maintained as a sum of the "active set" of directions
+$$Z^{(k)} = \sum_{i=1}^k \epsilon w_i \Delta_i.$$
+When $\Delta_k$ is added to the active set, we find the weight $w_k$ which approximately minimizes $||P_C (Z + w_k \Delta_k) - (Z + w_k \Delta_k)||^2$, but we update $Z$ by $\epsilon w_k \Delta_k$ rather than the full step $w_k \Delta_k$.  Rather than adding the negative of a previous direction from the "active set", we reduce its the weight $w_k$: if the weight is reduced to below zero, then we remove the direction $\Delta_k$.
+
+At each iteration $k$ we track the objective function, and the minimum so far.  Stop if we exceed the running minimum by some threshold.  (Note the objective may be non-monotonic due to discretization error).
+
+## Constrained approach
+
+`nuclear_norm.Rmd` describes an algorithm for solving the constrained-form problem
+
+$$
+\text{minimize } ||V - P_C V||^2_F \text{ subject to }||Y - V||_* \leq c
+$$
+
+as well as biconvex approaches for the (nonconvex) low-rank constraint.
+
+
+
+## Example Problem
+
+Requirements
+
+```{r}
+library(pracma)
+library(magrittr)
+library(nnls)
+library(parallel)
+```
+
+Let X be randomly generated, B sparse, E rank 2.
+
+```{r}
+n <- 30
+p <- 40
+v <- 30
+sparsity <- 0.1
+sigma <- 0.1
+sigmaI <- 0.05 # isotropic noise
+rk <- 3
+X <- randn(n, p) %>% abs
+B <- randn(p, v) %>% abs * (rand(p, v) < sparsity)
+U <- sqrt(sigma/rk) * randn(n, rk)
+V <- sqrt(sigma/rk) * randn(rk, v)
+E <- U %*% V
+mu <- X %*% B
+Y <- mu + E + sigmaI * randn(n, v)
+```
+
+### Use NNLS to recover B
+```{r}
+multi_nnls <- function(X, Y, mc.cores = 3) {
+  v <- dim(Y)[2]
+  bs <- mclapply(1:v, function(i) nnls(X, Y[, i])$x, mc.cores = mc.cores)
+  do.call(cbind, bs)
+}
+B_nnls <- multi_nnls(X, Y)
+#Check denoising error
+mu_nnls <- X %*% B_nnls
+(err_nnls <- sum((mu_nnls - mu)^2))
+```
+
+### Constrained form
+
+```{r}
+nnorm <- function(E) {
+  res <- svd(E, nu = 0, nv = 0)
+  sum(res$d)
+}
+
+rank1approx <- function(E) {
+  res <- svd(E, nu = 1, nv = 1)
+  res$u %*% t(res$v)
+}
+
+nuclear_opt <- function(X, Y, lambda, maxits = 10, mc.cores = 3) {
+  v <- dim(Y)[2]
+  p <- dim(X)[2]
+  n <- dim(X)[1]
+  Z <- Y
+  B <- multi_nnls(X, Z, mc.cores = mc.cores)
+  objective <- function(B, Z) {
+    c(sum((Z - X %*% B)^2), nnorm(Z - Y)/lambda)
+  }
+  objs <- objective(B, Z)
+  for (it in 1:maxits) {
+    # find the projection
+    B <- multi_nnls(X, Z, mc.cores = mc.cores)
+    Zh <- X %*% B
+    resid <- Z - Zh
+    alpha <- 1/it
+    Z <- Y + (1-alpha) * (Z - Y)  + alpha * lambda * rank1approx(-resid)
+    # objective
+    objs <- rbind(objs, objective(B, Z))
+  }
+  list(E = Z - Y, B = B, objs = objs, objective = objective)
+}
+# cheat by giving the true nuclear norm
+res_nn <- nuclear_opt(X, Y, nnorm(E)/2, 100)
+plot(res_nn$objs[, 1], type = "l", main = "Objective")
+plot(res_nn$objs[, 2], type = "l", main = "Constraint (max 1)")
+res_nn$objective(B, mu)
+mu_nn <- X %*% res_nn$B
+(err_nn <- sum((mu_nn - mu))^2)
+```
+
+### Comparison
+
+```{r}
+err_nnls
+err_nn
+```
