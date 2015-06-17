@@ -1,0 +1,81 @@
+---
+title: "Nuclear norm prior"
+author: "Charles Zheng"
+date: "06/17/2015"
+output: html_document
+---
+
+Let
+$$
+Y = XB + UDV^T + E
+$$
+where $B_{ij} \sim Exp(1)$, $U_{n \times r}$ and $V_{r \times v}$ are random orthogonal,
+and $D = \text{diag}(D_1, ..., D_r)$ with $D_r \sim Exp(\nu)$, and $E_{ij} \sim N(0, \sigma^2)$.
+
+```{r}
+library(magrittr)
+library(nnls)
+library(parallel)
+library(bayesm)
+library(glmnet)
+library(pracma)
+```
+
+```{r}
+n <- 300
+p <- 400
+v <- 30
+nu <- 0.1
+sigmaE <- 0.05
+rk <- 3
+X <- randn(n, p) %>% abs
+B <- matrix(rexp(p * v), p, v)
+temp <- randn(n, v)
+res <- svd(temp)
+U <- res$u[, 1:rk]
+V <- res$v[, 1:rk]
+d <- nu * rexp(rk)
+FF <- U %*% diag(d) %*% t(V)
+EE <- sigmaE * randn(n, v)
+mu <- X %*% B
+Y <- mu + FF + EE
+```
+
+### Relationship between squared penalty and penalty
+
+Let
+$$
+\beta = \text{argmin} ||y - X\beta||^2 + \tilde{\lambda} ||\beta||_1^2
+$$
+Then letting $\lambda = \frac{1}{n}\tilde{\lambda}^2 ||\beta||_1$, we have
+$$
+\beta = \text{argmin} \frac{1}{2n}||y - X\beta||^2 + \lambda||\beta||_1
+$$
+
+Test NNLS
+
+```{r}
+y <- Y[, 1]
+bt <- B[, 1]
+ltilde <- 0.1
+t1 <- proc.time()[3]
+bhat <- nnls(rbind(X, ltilde), c(y, 0))$x
+(tN <- proc.time()[3] - t1)
+# check KKT
+resid <- y - X %*% bhat
+check <- cbind(2 * t(X) %*% resid, bhat > 0)
+plot(check)
+(lambda <- 1/(2 * n) * max(check[, 1]))
+(lambda <- 1/n * ltilde^2 * sum(bhat))
+objective <- function(b) {
+  b <- as.numeric(b)
+  1/(2 * n) * sum((y - X %*% b)^2) + lambda * sum(b)
+}
+t1 <- proc.time()[3]
+res <- glmnet(x = X, y = y, alpha = 1, standardize = FALSE,
+              intercept = FALSE, lower.limits = 0, lambda = lambda * (50:1)^2)
+bhat2 <- coef(res, s = lambda)[-1]
+(tG <- proc.time()[3] - t1)
+objective(bhat2) - objective(bhat)
+plot(bhat, bhat2)
+```
