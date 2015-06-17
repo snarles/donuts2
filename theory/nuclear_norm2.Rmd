@@ -62,18 +62,35 @@ $$
 
 as well as biconvex approaches for the (nonconvex) low-rank constraint.
 
-
-
-## Example Problem
-
-Requirements
+### Requirements
 
 ```{r}
 library(pracma)
 library(magrittr)
 library(nnls)
 library(parallel)
+library(bayesm)
 ```
+
+### Random stuff
+Nuclear norm of a square gaussian random matrix is nearly linear with a slope of 4.
+A $p \times n$ rectangular gaussian matrix with $p > n$ has about $\sqrt{p/n}$ times the nuclear norm of an $n \times n$ matrix.
+
+```{r}
+nnorm <- function(E) sum(svd(E, nu = 0, nv = 0)$d)
+fnorm2 <- function(E) sum(E^2)
+
+ann <- numeric(20)
+for (k in 1:20) {
+  ann[k] <- mclapply(1:1000, function(i) nnorm(randn(k, k)), mc.cores = 3) %>% unlist %>% mean
+}
+plot(ann, type = "l", main = "Nuclear norm of random matrix")
+tt <- 1:20
+lm(ann ~ tt)
+```
+
+## Example Problem
+
 
 Let X be randomly generated, B sparse, E rank 2.
 
@@ -82,73 +99,171 @@ n <- 30
 p <- 40
 v <- 30
 sparsity <- 0.1
-sigma <- 0.1
+sigmaE <- 0.1
 sigmaI <- 0.05 # isotropic noise
-rk <- 3
+rk <- 1
 X <- randn(n, p) %>% abs
 B <- randn(p, v) %>% abs * (rand(p, v) < sparsity)
-U <- sqrt(sigma/rk) * randn(n, rk)
-V <- sqrt(sigma/rk) * randn(rk, v)
+U <- sqrt(sigmaE/rk) * randn(n, rk)
+V <- sqrt(sigmaE/rk) * randn(rk, v)
 E <- U %*% V
 mu <- X %*% B
 Y <- mu + E + sigmaI * randn(n, v)
 ```
 
+Compare the squared Frobenius norm of a $n \times v$ gaussian matrix with its nuclear norm.
+
+```{r}
+res <- mclapply(1:1000, function(i) {
+  xx <- randn(n, v)
+  c(sum(xx^2), nnorm(xx))
+}, mc.cores = 3)
+res <- do.call(rbind, res)
+colMeans(res)
+(f2n <- colMeans(res) %>% {.[1]/.[2]})
+```
+
+The $\lambda$ for nuclear norm penalty should be at least this value to ensure comparability between NNLS and nuclear norm optimization.
+
+Compare the Frob norm of the error with the nuclear norm.
+```{r}
+nnorm(E)
+sum(E^2)
+nnorm(E) * f2n
+```
+
+CHeck that the 
+
+
 ### Use NNLS to recover B
 ```{r}
-multi_nnls <- function(X, Y, mc.cores = 3) {
+multi_nnls <- function(X0, Y0, l1p = 0, mc.cores = 3) {
   v <- dim(Y)[2]
+  Y <- rbind(Y, 0)
+  X <- rbind(X0, l1p * rep(1, p))
   bs <- mclapply(1:v, function(i) nnls(X, Y[, i])$x, mc.cores = mc.cores)
   do.call(cbind, bs)
 }
-B_nnls <- multi_nnls(X, Y)
+l1p <- 0.1
+B_nnls <- multi_nnls(X, Y, l1p)
 #Check denoising error
 mu_nnls <- X %*% B_nnls
 (err_nnls <- sum((mu_nnls - mu)^2))
 ```
 
+
+### Boosting
+
+
+```{r}
+nuclear_boost <- function(X, Y, eps, l1p = 0, maxits = 30, mc.cores = 3) {
+  v <- dim(Y)[2]
+  p <- dim(X)[2]
+  n <- dim(X)[1]
+  Z <- Y
+  objective <- function(B, Z) {
+    sum((rbind(Z, 0) - rbind(X, l1p) %*% B)^2)
+  }
+  objs <- numeric(maxits)
+  nnorms <- numeric(maxits)
+  us <- matrix(0, n, maxits)
+  vs <- matrix(0, v, maxits)
+  for (it in 1:maxits) {
+    # find the projection
+    B <- multi_nnls(rbind(X, l1p), rbind(Z, 0), mc.cores = mc.cores)
+    Zh <- X %*% B
+    resid <- Z - Zh
+    res <- svd(-resid, nu = 1, nv = 1)
+    us[, it] <- res$u
+    vs[, it] <- res$v
+    Z <- Z  + eps * us[, it] %*% t(vs[, it])
+    # objective
+    objs[it] <- objective(B, Z)
+    nnorms[it] <- nnorm(Z - Y)
+  }
+  E <- Z - Y
+  solution_path <- function(i) {
+    Z <- Y
+    for (k in 1:i) {
+      Z <- Z + eps * us[, k] %*% t(vs[, k])
+    }
+    B <- multi_nnls(X, Z, mc.cores = mc.cores)
+    list(B = B, E = (Z - Y)[1:n, ])
+  }
+  list(E = E, B = B, objs = objs, nnorms = nnorms, 
+       objective = objective, us = us, vs = vs, eps = eps,
+       solution_path = solution_path)
+}
+```
+
+
+The step size has to be carefully tuned to avoid disaster.
+
+```{r}
+lambda <- 7
+res_nn <- nuclear_boost(X, Y, eps = 0.03, l1p = l1p, maxits = 300, mc.cores = 3)
+plot(res_nn$objs, type = "l", main = "Objective")
+plot(res_nn$nnorms, type = "l", main = "Nuclear norm")
+plot(res_nn$objs + lambda * res_nn$nnorms, type = "l", main = "Penalized objective")
+```
+
+The number of unique directions is small.
+```{r}
+matplot(t(res_nn$us), pch = "-", main = "Directions")
+```
+
+The solution at some point on the path
+```{r}
+ind <- order(res_nn$objs + lambda * res_nn$nnorms)[1]
+(n_star <- res_nn$nnorms[ind])
+res_ind <- res_nn$solution_path(ind)
+nnorm(res_ind$E)
+B_nn <- res_ind$B
+mu_nn <- X %*% res_nn$B
+(err_nn <- sum((mu_nn - mu))^2)
+```
+
 ### Constrained form
 
 ```{r}
-nnorm <- function(E) {
-  res <- svd(E, nu = 0, nv = 0)
-  sum(res$d)
-}
-
 rank1approx <- function(E) {
   res <- svd(E, nu = 1, nv = 1)
   res$u %*% t(res$v)
 }
 
-nuclear_opt <- function(X, Y, lambda, maxits = 10, mc.cores = 3) {
+nuclear_opt <- function(X, Y, l1p, lambda, maxits = 10, mc.cores = 3) {
   v <- dim(Y)[2]
   p <- dim(X)[2]
   n <- dim(X)[1]
   Z <- Y
-  B <- multi_nnls(X, Z, mc.cores = mc.cores)
   objective <- function(B, Z) {
-    c(sum((Z - X %*% B)^2), nnorm(Z - Y)/lambda)
+    sum((rbind(Z, 0) - rbind(X, l1p) %*% B)^2)
   }
-  objs <- objective(B, Z)
+  objs <- c()
+  nnorms <- c()
   for (it in 1:maxits) {
     # find the projection
-    B <- multi_nnls(X, Z, mc.cores = mc.cores)
+    B <- multi_nnls(rbind(X, l1p), rbind(Z, 0), mc.cores = mc.cores)
     Zh <- X %*% B
     resid <- Z - Zh
     alpha <- 1/it
     Z <- Y + (1-alpha) * (Z - Y)  + alpha * lambda * rank1approx(-resid)
     # objective
-    objs <- rbind(objs, objective(B, Z))
+    objs <- c(objs, objective(B, Z))
+    nnorms <- c(nnorms, nnorm(Z - Y))
   }
-  list(E = Z - Y, B = B, objs = objs, objective = objective)
+  list(E = Z - Y, B = B, objs = objs, nnorms = nnorms, objective = objective)
 }
-# cheat by giving the true nuclear norm
-res_nn <- nuclear_opt(X, Y, nnorm(E)/2, 100)
-plot(res_nn$objs[, 1], type = "l", main = "Objective")
-plot(res_nn$objs[, 2], type = "l", main = "Constraint (max 1)")
-res_nn$objective(B, mu)
-mu_nn <- X %*% res_nn$B
-(err_nn <- sum((mu_nn - mu))^2)
+```
+check that we got the solution
+```{r}
+res_nnc <- nuclear_opt(X, Y, l1p, n_star, 100)
+plot(res_nnc$objs, type = "l", main = "Objective")
+plot(res_nnc$nnorms, type = "l", main = "Nuclear norm")
+c(res_nnc$objective(B, mu), nnorm(mu - Y))
+mu_nnc <- X %*% res_nnc$B
+(err_nnc <- sum((mu_nnc - mu))^2)
+plot(res_nnc$B, res_ind$B, main = "Boosting vs. exact")
 ```
 
 ### Comparison
