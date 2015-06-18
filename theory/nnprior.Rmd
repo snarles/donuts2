@@ -79,3 +79,29 @@ bhat2 <- coef(res, s = lambda)[-1]
 objective(bhat2) - objective(bhat)
 plot(bhat, bhat2)
 ```
+
+Method to do Lagrangian L1 penalty: $$1/2 ||y - X\beta||^2 + \lambda ||\beta||_1$$
+
+```{r}
+f2 <- function(x) sum(x^2)
+lambda <- 0.1
+lambda_nnls <- function(X, y, lambda, maxits = 10) {
+  b <- nnls(X, y)$x
+  best <- Inf
+  best_b <- b
+  objective <- function(b) f2(X %*% b - y)/2 + lambda * sum(abs(b))
+  (tab <- cbind(c(0, 0, sum(b), objective(b))))
+  l1p <- sqrt(lambda/sum(b))
+  for (i in 1:maxits) {
+    b <- nnls(rbind(X, l1p), c(y, 0))$x
+    ob <- objective(b)
+    (tab <- cbind(tab, c(l1p, l1p^2 * sum(b), sum(b), objective(b))))
+    if (max(tab[2, ]) < lambda) l1p <- sqrt(lambda/min(tab[3, ]))
+    if (ob < best) {
+      best <- ob
+      best_b <- b
+    }
+  }
+  list(b = best_b, tab = tab, objective = objective)
+}
+```
