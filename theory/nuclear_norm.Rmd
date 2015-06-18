@@ -173,7 +173,7 @@ biconvex_opt <- function(X, Y, rk = 2, maxits = 10) {
        U = matrix(res$Uvec, n, rk), V = matrix(res$Vvec, rk, v),
        objective = objective)
 }
-res_bc <- biconvex_opt(X, Y, rk, 20)
+res_bc <- biconvex_opt(X, Y, rk, 2)
 # compare true size of E with fitted size
 c(sum(E^2), sum(res_bc$E^2))
 B_bc <- res_bc$B
@@ -259,7 +259,7 @@ reg_biconvex_opt <- function(X, Y, rk = 2, maxits = 10,
        U = matrix(res$Uvec, n, rk), V = matrix(res$Vvec, rk, v),
        objective = objective)
 }
-res_bc2 <- reg_biconvex_opt(X, Y, rk, 20, lambdaU = 0.001, lambdaV = 0.001,
+res_bc2 <- reg_biconvex_opt(X, Y, rk, 2, lambdaU = 0.001, lambdaV = 0.001,
                             lambdaB = 0.0)
 # compare true size of E with fitted size
 c(sum(E^2), sum(res_bc2$E^2))
@@ -315,7 +315,7 @@ plot(res_nn$objs[, 1], type = "l", main = "Objective")
 plot(res_nn$objs[, 2], type = "l", main = "Constraint (max 1)")
 res_nn$objective(B, mu)
 mu_nn <- X %*% res_nn$B
-(err_nn <- sum((mu_nn - mu))^2)
+(err_nn <- sum((mu_nn - mu)^2))
 ```
 
 ### Comparison
