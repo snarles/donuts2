@@ -1,0 +1,236 @@
+---
+title: "ADMM nuclear"
+author: "Charles Zheng"
+date: "06/17/2015"
+output: html_document
+---
+
+Solve the following
+$$
+\text{minimize } ||Y - F - XB||_F^2 + \lambda ||B||_1 + \eta ||F||_*^2 \text{ st }B_{ij} \geq 0
+$$
+
+
+```{r}
+library(magrittr)
+library(nnls)
+library(parallel)
+library(glmnet)
+library(pracma)
+n <- 30
+p <- 40
+v <- 30
+X <- randn(n, p) %>% abs
+B0 <- matrix(rexp(p * v), p, v)
+F0 <- 10 * randn(n, 2) %*% randn(2, v)
+E0 <- 0.1 * randn(n, v)
+Y <- X %*% B0 + E0 + F0
+f2 <- function(x) sum(x ^ 2)
+nnorm <- function(x) sum(svd(x, nu = 0, nv = 0)$d)
+rho <- 2 # used in ADMM later
+lambda <- 0.01
+nu <- 0.2
+true_pars <- list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+             B = B0, E = E0,
+             FF = F0, W = zeros(n, v))
+```
+
+# ADMM algorithm
+
+Solve
+$$
+\text{minimize } ||E||_F^2 + \lambda ||B||_1 + \eta ||F||_*^2
+$$
+subject to
+$$B_{ij} \geq 0$$
+$$Y = E + F + XB$$
+
+ * Intitalize $W, B, F, E = 0$
+ * Iterate:
+ * $E = \text{argmin } ||E||_F^2 + \frac{\rho}{2} || E - (Y - XB - F - W)||_F^2$ 
+ * $B = \text{argmin } \lambda ||B||_1 + \frac{\rho}{2} || XB - (Y - E - F - W)||_F^2$
+ * $F = \text{argmin } \nu ||F||_*^2 + \frac{\rho}{2} || F - (Y - XB - E - W)||_F^2$  
+ * $W = W - (Y - XB - E - F)$
+
+```{r}
+W <- zeros(n, v)
+B <- zeros(p, v)
+FF <- zeros(n, v)
+E <- zeros(n, v)
+```
+
+#### Update $E$
+
+$$E = \text{argmin } ||E||_F^2 + \frac{\rho}{2} || E - (Y - XB - F - W)||_F^2$$
+
+given by
+
+$$
+E = \frac{\rho}{2 + \rho} (Y - XB - F - W)
+$$
+
+```{r}
+objective_E <- function(W, B, FF, E) {
+  f2(E) + (rho/2) * f2(E - (Y - X %*% B - FF - W))
+}
+update_E <- function(W, B, FF, E) {
+  rho/(2 + rho) * (Y - X %*% B - FF - W)
+}
+E <- update_E(W, B, FF, E)
+objective_E(W, B, FF, E)
+objective_E(W, B, FF, 1.01 * E)
+objective_E(W, B, FF, 0.99 * E)
+```
+
+#### Update $B$
+
+$$B = \text{argmin } \lambda ||B||_1 + \frac{\rho}{2} || XB - (Y - E - F - W)||_F^2$$
+
+equivalently
+
+$$B = \text{argmin } \frac{\lambda}{\rho} ||B||_1 + \frac{1}{2} || XB - (Y - E - F - W)||_F^2$$
+
+This is just nonnegative lasso with the response $Y - E - F - W$ and penalty $\lambda/\rho$
+
+```{r}
+objective_B <- function(W, B, FF, E) {
+  lambda * sum(abs(B)) + (rho/2) * f2(E - (Y - X %*% B - FF - W))
+}
+lambda_nnls <- function(X, y, lambda, maxits = 5) {
+  l1p <- 0
+  for (i in 1:maxits) {
+    b <- nnls(rbind(X, l1p), c(y, 0))$x
+    if (sum(b) == 0) return(list(b = b, lambda = 0))
+    l1p <- sqrt(lambda/sum(b))
+  }
+  list(b = b, lambda = l1p^2 * sum(b))
+}
+update_B <- function(W, B, FF, E) {
+  R <- Y - E - FF - W
+  do.call(cbind,
+          mclapply(1:v,
+          function(i)
+            lambda_nnls(X, R[, i], lambda/rho)$b, mc.cores = 3))
+}
+B <- update_B(W, B, FF, E)
+objective_B(W, B, FF, E)
+objective_B(W, B * 1.01, FF, E)
+objective_B(W, B * .99, FF, E)
+```
+
+#### Update $F$
+
+$$F = \text{argmin } \nu ||F||_*^2 + \frac{\rho}{2} || F - (Y - XB - E - W)||_F^2$$
+
+Take the SVD
+
+$$
+Y - XB - E - W = U\text{diag}(d_i)V^T
+$$
+
+Then $F$ takes the form
+
+$$
+F = U\text{diag}([d_i - t]_+)V^T.
+$$
+
+and 
+
+$$
+\nu ||F||_*^2 + \frac{\rho}{2} || F - (Y - XB - E - W)||_F^2
+= \nu \left(\sum [d_i - t]_+\right)^2 +  \frac{\rho}{2}\sum \min(d_i, t)^2
+$$
+
+Search over $t$ to find the minimum.
+
+```{r}
+objective_F <- function(W, B, FF, E) {
+  nu * nnorm(FF)^2 + (rho/2) * f2(E - (Y - X %*% B - FF - W))
+}
+soft <- function(x, tt) pmax(0, x - tt)
+update_F <- function(W, B, FF, E) {
+  R <- Y - X %*% B - E - W
+  res <- svd(R)
+  d <- res$d
+  Ft <- function(tt) res$u %*% diag(soft(d, tt)) %*% t(res$v)
+  objective_t <- function(tt) {
+    nu * sum(soft(d, tt))^2 + (rho/2) * sum(pmin(tt, d)^2)
+  }
+  ts <- seq(0, max(d), max(d)/1000)
+  vals <- sapply(ts, objective_t)
+  tt <- ts[order(vals)[1]]
+  Ft(tt)
+}
+FF <- update_F(W, B, FF, E)
+objective_F(W, B, FF, E)
+objective_F(W, B, FF * 1.01, E)
+objective_F(W, B, FF * 0.99, E)
+```
+
+### Algorithm
+
+```{r}
+objective <- function(X, Y, lambda, nu, rho, B, FF, E, W, ...) {
+  f2(Y - X %*% B - FF) + nu * nnorm(FF)^2 + lambda * sum(abs(B))
+}
+
+admm_iterate <- function(X, Y, lambda, nu, rho, B, FF, E, W,
+                         mc.cores = 1, ...) {
+  # Update B
+  R <- Y - E - FF - W
+  B <- do.call(cbind,
+          mclapply(1:v,
+          function(i)
+            lambda_nnls(X, R[, i], lambda/rho)$b, mc.cores = mc.cores))
+  XB <- X %*% B
+  # Update FF
+  R <- Y - XB - E - W
+  res <- svd(R)
+  d <- res$d
+  objective_t <- function(tt) {
+    nu * sum(soft(d, tt))^2 + (rho/2) * sum(pmin(tt, d)^2)
+  }
+  ts <- seq(0, max(d), max(d)/1000)
+  vals <- sapply(ts, objective_t)
+  tt <- ts[order(vals)[1]]
+  FF <- res$u %*% diag(soft(d, tt)) %*% t(res$v)
+  # Update E
+  E <- rho/(2 + rho) * (Y - XB - FF - W)
+  # Update W
+  W <- W - (Y - XB - FF - E)
+  list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+       B = B, FF = FF, E = E, W = W)
+}
+
+admm_nuclear <- function(X, Y, lambda, nu, rho, B, FF, E, W,
+                         mc.cores = 1, maxits = 10, ...) {
+  pars <- list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+               B = B, FF = FF, E = E, W = W, mc.cores = mc.cores)
+  objs <- numeric(maxits)
+  feas <- numeric(maxits)
+  for (i in 1:maxits) {
+    pars <- do.call(admm_iterate, pars)
+    objs[i] <- do.call(objective, pars)
+    feas[i] <- f2(Y - X %*% B - E - FF)
+  }
+  c(pars, list(objs = objs, feas = feas))
+}
+```
+
+Apply the algorithm
+
+```{r}
+(ot <- do.call(objective, true_pars))
+
+pars <- list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+             B = zeros(p, v), E = Y,
+             FF = zeros(n, v), W = zeros(n, v),
+             mc.cores = 3, maxits = 20)
+res <- do.call(admm_nuclear, pars)
+
+res$objs %>% { plot(., main = "Objective", type = "l", ylim = c(min(.), ot)) }
+res$feas %>% { plot(., main = "Feasibility", type = "l", ylim = c(0, max(1, median(.)))) }
+plot(X %*% res$B, X %*% true_pars$B, main = "Recovery of mean")
+do.call(objective, res)
+```
+

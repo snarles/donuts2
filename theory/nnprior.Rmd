@@ -16,12 +16,12 @@ and $D = \text{diag}(D_1, ..., D_r)$ with $D_r \sim Exp(\nu)$, and $E_{ij} \sim 
 library(magrittr)
 library(nnls)
 library(parallel)
-library(bayesm)
 library(glmnet)
 library(pracma)
 ```
 
 ```{r}
+rdiric <- function(k) { rexp(k) %>% {./sum(.)} }
 n <- 300
 p <- 400
 v <- 30
@@ -34,74 +34,29 @@ temp <- randn(n, v)
 res <- svd(temp)
 U <- res$u[, 1:rk]
 V <- res$v[, 1:rk]
-d <- nu * rexp(rk)
+d <- nu * abs(rnorm(1)) * rdiric(rk)
 FF <- U %*% diag(d) %*% t(V)
 EE <- sigmaE * randn(n, v)
 mu <- X %*% B
 Y <- mu + FF + EE
 ```
 
-### Relationship between squared penalty and penalty
-
-Let
-$$
-\beta = \text{argmin} ||y - X\beta||^2 + \tilde{\lambda} ||\beta||_1^2
-$$
-Then letting $\lambda = \frac{1}{n}\tilde{\lambda}^2 ||\beta||_1$, we have
-$$
-\beta = \text{argmin} \frac{1}{2n}||y - X\beta||^2 + \lambda||\beta||_1
-$$
-
-Test NNLS
-
-```{r}
-y <- Y[, 1]
-bt <- B[, 1]
-ltilde <- 0.1
-t1 <- proc.time()[3]
-bhat <- nnls(rbind(X, ltilde), c(y, 0))$x
-(tN <- proc.time()[3] - t1)
-# check KKT
-resid <- y - X %*% bhat
-check <- cbind(2 * t(X) %*% resid, bhat > 0)
-plot(check)
-(lambda <- 1/(2 * n) * max(check[, 1]))
-(lambda <- 1/n * ltilde^2 * sum(bhat))
-objective <- function(b) {
-  b <- as.numeric(b)
-  1/(2 * n) * sum((y - X %*% b)^2) + lambda * sum(b)
-}
-t1 <- proc.time()[3]
-res <- glmnet(x = X, y = y, alpha = 1, standardize = FALSE,
-              intercept = FALSE, lower.limits = 0, lambda = lambda * (50:1)^2)
-bhat2 <- coef(res, s = lambda)[-1]
-(tG <- proc.time()[3] - t1)
-objective(bhat2) - objective(bhat)
-plot(bhat, bhat2)
-```
+### Component optimizations
 
 Method to do Lagrangian L1 penalty: $$1/2 ||y - X\beta||^2 + \lambda ||\beta||_1$$
 
 ```{r}
 f2 <- function(x) sum(x^2)
-lambda <- 0.1
-lambda_nnls <- function(X, y, lambda, maxits = 10) {
-  b <- nnls(X, y)$x
-  best <- Inf
-  best_b <- b
-  objective <- function(b) f2(X %*% b - y)/2 + lambda * sum(abs(b))
-  (tab <- cbind(c(0, 0, sum(b), objective(b))))
-  l1p <- sqrt(lambda/sum(b))
+lambda_nnls <- function(X, y, lambda, maxits = 5) {
+  l1p <- 0
   for (i in 1:maxits) {
     b <- nnls(rbind(X, l1p), c(y, 0))$x
-    ob <- objective(b)
-    (tab <- cbind(tab, c(l1p, l1p^2 * sum(b), sum(b), objective(b))))
-    if (max(tab[2, ]) < lambda) l1p <- sqrt(lambda/min(tab[3, ]))
-    if (ob < best) {
-      best <- ob
-      best_b <- b
-    }
+    l1p <- sqrt(lambda/min(tab[3, ]))
   }
-  list(b = best_b, tab = tab, objective = objective)
+  list(b = b, lambda = l1p^2 * sum(b))
 }
 ```
+
+
+
+### ADMM
