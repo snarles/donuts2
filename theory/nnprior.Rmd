@@ -5,12 +5,14 @@ date: "06/17/2015"
 output: html_document
 ---
 
+## Model
+
 Let
 $$
 Y = XB + UDV^T + E
 $$
-where $B_{ij} \sim Exp(1)$, $U_{n \times r}$ and $V_{r \times v}$ are random orthogonal,
-and $D = \text{diag}(D_1, ..., D_r)$ with $D_r \sim Exp(\nu)$, and $E_{ij} \sim N(0, \sigma^2)$.
+where $B_{ij} \sim Exp(\mu_B)$, $U_{n \times r}$ and $V_{r \times v}$ are random orthogonal,
+and $D = \text{diag}(D_1, ..., D_r)$ with $D_1, ..., D_r = Z Dirichlet(1, ..., 1)$ where $Z \sim |N(0, \sigma^2_D)|$, and $E_{ij} \sim N(0, \sigma^2_E)$.
 
 ```{r}
 library(magrittr)
@@ -21,42 +23,146 @@ library(pracma)
 ```
 
 ```{r}
+zattach <- function(ll) for (i in names(ll)) assign(i, ll[[i]], envir = globalenv())
 rdiric <- function(k) { rexp(k) %>% {./sum(.)} }
-n <- 300
-p <- 400
-v <- 30
-nu <- 0.1
-sigmaE <- 0.05
-rk <- 3
-X <- randn(n, p) %>% abs
-B <- matrix(rexp(p * v), p, v)
-temp <- randn(n, v)
-res <- svd(temp)
-U <- res$u[, 1:rk]
-V <- res$v[, 1:rk]
-d <- nu * abs(rnorm(1)) * rdiric(rk)
-FF <- U %*% diag(d) %*% t(V)
-EE <- sigmaE * randn(n, v)
-mu <- X %*% B
-Y <- mu + FF + EE
+hyperpars <- list(n = 30, p = 40, v = 30, muB = 1,
+             sigmaD = 2, sigmaE = 0.05, rk = 3) %T>% zattach
+gen_data <- function(n, p, v, muB, sigmaD, sigmaE, rk) {
+  X <- randn(n, p) %>% abs
+  B <- matrix(muB * rexp(p * v), p, v)
+  temp <- randn(n, v)
+  res <- svd(temp)
+  U <- res$u[, 1:rk]
+  V <- res$v[, 1:rk]
+  d <- sigmaD * abs(rnorm(1)) * rdiric(rk)
+  FF <- U %*% diag(d) %*% t(V)
+  E <- sigmaE * randn(n, v)
+  mu <- X %*% B
+  Y <- mu + FF + E
+  list(X = X, Y = Y, B = B, FF = FF, E = E, mu = mu)
+}
+truth <- do.call(gen_data, hyperpars) %T>% zattach
 ```
 
-### Component optimizations
+## Inference
 
-Method to do Lagrangian L1 penalty: $$1/2 ||y - X\beta||^2 + \lambda ||\beta||_1$$
+The likelihood of the parameters is
+$$
+\log p(Y|B, F) = \text{const} -\frac{1}{2\sigma^2_E} ||Y - XB - F||_F^2
+$$
+The priors are
+$$
+\log p(B) = \text{const} - \frac{||B||_1}{\mu_B}
+$$
+$$
+\log p(F) = \text{const} - \frac{||D||_1^2}{2\sigma_D^2} = \text{const} - \frac{||F||_*^2}{2\sigma_D^2}
+$$
+Hence, the posterior is
+$$
+\log p(B, F| Y) = \text{const} -\frac{1}{2\sigma^2_E} ||Y - XB - F||_F^2
+- \frac{||B||_1}{\mu_B} - \frac{||F||_*^2}{2\sigma_D^2}
+$$
+
+The posterior mode is obtained at
+$$
+\text{minimize} ||Y - XB - F||_F^2 + \frac{2\sigma^2_E}{\mu_B} ||B||_1 + \frac{\sigma^2_E}{\sigma^2_F} ||F||_*^2
+$$
 
 ```{r}
 f2 <- function(x) sum(x^2)
+nnorm <- function(x) sum(svd(x, nu = 0, nv = 0)$d)
+logpost_ <- function(n, p, v, muB, sigmaD, sigmaE, rk) {
+  logpost <- function(X, Y, B, FF, ...) {
+    -(1/2/sigmaE^2) * f2(Y - X %*% B - FF) - 
+      (1/muB) * sum(abs(B)) - 
+      (1/2/sigmaD)^2 * nnorm(FF)^2
+  }
+  lambda <- 2 * sigmaE^2/muB
+  nu <- (sigmaE/sigmaD)^2
+  regparams <- list(lambda = lambda, nu = nu)
+  objective <- function(X, Y, B, FF, ...) {
+    f2(Y - X %*% B - FF) + lambda * sum(abs(B)) + nu * nnorm(FF)^2
+  }
+  list(logpost = logpost, regparams = regparams, objective = objective)
+}
+do.call(logpost_, hyperpars) %>% zattach
+do.call(logpost, truth)
+```
+
+## ADMM algorithm for posterior mode
+
+Code
+
+```{r}
 lambda_nnls <- function(X, y, lambda, maxits = 5) {
   l1p <- 0
   for (i in 1:maxits) {
     b <- nnls(rbind(X, l1p), c(y, 0))$x
-    l1p <- sqrt(lambda/min(tab[3, ]))
+    if (sum(b) == 0) return(list(b = b, lambda = 0))
+    l1p <- sqrt(lambda/sum(b))
   }
   list(b = b, lambda = l1p^2 * sum(b))
 }
+soft <- function(x, tt) pmax(0, x - tt)
+admm_iterate <- function(X, Y, lambda, nu, rho, B, FF, E, W,
+                         mc.cores = 1, ...) {
+  # Update B
+  R <- Y - E - FF - W
+  B <- do.call(cbind,
+          mclapply(1:v,
+          function(i)
+            lambda_nnls(X, R[, i], lambda/rho)$b, mc.cores = mc.cores))
+  XB <- X %*% B
+  # Update FF
+  R <- Y - XB - E - W
+  res <- svd(R)
+  d <- res$d
+  objective_t <- function(tt) {
+    nu * sum(soft(d, tt))^2 + (rho/2) * sum(pmin(tt, d)^2)
+  }
+  ts <- seq(0, max(d), max(d)/1000)
+  vals <- sapply(ts, objective_t)
+  tt <- ts[order(vals)[1]]
+  FF <- res$u %*% diag(soft(d, tt)) %*% t(res$v)
+  # Update E
+  E <- rho/(2 + rho) * (Y - XB - FF - W)
+  # Update W
+  W <- W - (Y - XB - FF - E)
+  list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+       B = B, FF = FF, E = E, W = W)
+}
+admm_nuclear <- function(X, Y, lambda, nu, rho, B, FF, E, W,
+                         mc.cores = 1, maxits = 10, ...) {
+  pars <- list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+               B = B, FF = FF, E = E, W = W, mc.cores = mc.cores)
+  objs <- numeric(maxits)
+  feas <- numeric(maxits)
+  for (i in 1:maxits) {
+    pars <- do.call(admm_iterate, pars)
+    objs[i] <- do.call(objective, pars)
+    feas[i] <- with(pars, f2(Y - X %*% B - E - FF))
+  }
+  c(pars, list(objs = objs, feas = feas))
+}
 ```
 
+Running the algorithm
+```{r}
+mc.cores <- 3
+maxits <- 30
+rho <- 2
+regparams %T>% zattach
+initial_pars <- list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+                     B = 0 * B, FF = 0* FF, E = Y, W = 0 * Y,
+                     mc.cores = mc.cores, maxits = maxits)
+res <- do.call(admm_nuclear, initial_pars)
+```
 
-
-### ADMM
+Results
+```{r}
+(ot <- do.call(objective, truth))
+res$objs %>% { plot(., main = "Objective", type = "l", ylim = c(min(.), ot)) }
+res$feas %>% { plot(log(.), main = "Log Feasibility", type = "l") }
+plot(X %*% res$B, X %*% truth$B, main = "Recovery of mean")
+do.call(objective, res)
+```
