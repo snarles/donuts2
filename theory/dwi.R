@@ -10,6 +10,7 @@ library(Rcpp)
 library(pracma)
 library(nnls)
 library(parallel)
+library(transport)
 
 ## ** Functions for constructing spheres **
 
@@ -199,3 +200,25 @@ admm_nuclear <- function(X, Y, lambda, nu, rho,
   }
   c(pars, list(objs = objs, feas = feas, objective = objective))
 }
+
+## ** Computing EMD distance **
+
+## Computes N x M matrix of arc distance between v1[N, 3] and v2[M, 3]
+arcdist <- function(v1, v2) {
+  M <- abs(nmlzr(v1) %*% t(nmlzr(v2)))
+  M[M > 1] <- 1; acos(M)
+}
+
+arc_emd <- function(v1, w1, v2, w2) {
+  if (sum(w1) * sum(w2) == 0) return(pi)
+  v1 <- v1[w1 > 0, , drop = FALSE]
+  w1 <- w1[w1 > 0]
+  v2 <- v2[w2 > 0, , drop = FALSE]
+  w2 <- w2[w2 > 0]
+  w1 <- w1/sum(w1)
+  w2 <- w2/sum(w2)
+  M <- arcdist(v1, v2)
+  res <- suppressWarnings(transport(w1, w2, M))
+  sum(M[as.matrix(res[, 1:2])] * res[, 3])
+}
+

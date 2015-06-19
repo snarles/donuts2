@@ -45,18 +45,29 @@ Y <- Mu + 0.01 * randn(nb, n) + E
 ## Do the denoising
 ####
 
+emds <- function(B, mc.cores = 3) {
+  unlist(mclapply(1:n, function(i) arc_emd(dirs[[i]], ws[i, ], pts, B[, i]), mc.cores = mc.cores))
+}
+
+
 X <- stetan(bvecs, pts, kappa)
 B_nnls <- multi_nnls(X, Y)
 Mu_nnls <- X %*% B_nnls
 (err_nnls <- sum((Mu - Mu_nnls)^2))
+emd_nnls <- emds(B_nnls)
+mean(emd_nnls)
 
 res_nn <- nuclear_opt(X, Y, 10.0, 10)
 B_nn <- res_nn$B
 Mu_nn <- X %*% B_nn
 (err_nn <- sum((Mu - Mu_nn)^2))
+emd_nn <- emds(B_nn)
+mean(emd_nn)
 
 res_admm <- admm_nuclear(X, Y, lambda = 0.1, nu = 0.2, rho = 2,
                          mc.cores=3, maxits = 10)
 B_admm <- res_admm$B
 Mu_admm <- X %*% B_admm
 (err_admm <- sum((Mu - Mu_admm)^2))
+emd_admm <- emds(B_admm)
+mean(emd_admm)
