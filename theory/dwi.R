@@ -83,7 +83,7 @@ cppFunction('NumericVector ouSub(NumericVector x, double theta) {
 }'
 )
 
-plot(ouSub(rnorm(10000), .99), type = "l")
+#plot(ouSub(rnorm(10000), .99), type = "l")
 
 ou <- function(n, p = 1, theta = 0.5) {
   burnin <- floor(-7/log(theta))
@@ -142,3 +142,60 @@ nuclear_opt <- function(X, Y, lambda, maxits = 10, mc.cores = 3) {
   list(E = Z - Y, B = B, objs = objs, objective = objective)
 }
 
+## ** ADMM algorithm **
+f2 <- function(x) sum(x^2)
+lambda_nnls <- function(X, y, lambda, maxits = 5) {
+  l1p <- 0
+  for (i in 1:maxits) {
+    b <- nnls(rbind(X, l1p), c(y, 0))$x
+    if (sum(b) == 0) return(list(b = b, lambda = 0))
+    l1p <- sqrt(lambda/sum(b))
+  }
+  list(b = b, lambda = l1p^2 * sum(b))
+}
+soft <- function(x, tt) pmax(0, x - tt)
+admm_iterate <- function(X, Y, lambda, nu, rho, B, FF, E, W,
+                         mc.cores = 1, ...) {
+  # Update B
+  R <- Y - E - FF - W
+  B <- do.call(cbind,
+               mclapply(1:dim(R)[2],
+                        function(i)
+                          lambda_nnls(X, R[, i], lambda/rho)$b, mc.cores = mc.cores))
+  XB <- X %*% B
+  # Update FF
+  R <- Y - XB - E - W
+  res <- svd(R)
+  d <- res$d
+  objective_t <- function(tt) {
+    nu * sum(soft(d, tt))^2 + (rho/2) * sum(pmin(tt, d)^2)
+  }
+  ts <- seq(0, max(d), max(d)/1000)
+  vals <- sapply(ts, objective_t)
+  tt <- ts[order(vals)[1]]
+  FF <- res$u %*% diag(soft(d, tt)) %*% t(res$v)
+  # Update E
+  E <- rho/(2 + rho) * (Y - XB - FF - W)
+  # Update W
+  W <- W - (Y - XB - FF - E)
+  list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+       B = B, FF = FF, E = E, W = W)
+}
+admm_nuclear <- function(X, Y, lambda, nu, rho, 
+                         B = 0 * zeros(dim(X)[2], dim(Y)[2]),
+                         FF = 0 * Y, E = Y, W = 0 * Y,
+                         mc.cores = 1, maxits = 10, ...) {
+  objective <- function(X, Y, lambda, nu, rho, B, FF, E, W, ...) {
+    f2(Y - X %*% B - FF) + nu * nnorm(FF)^2 + lambda * sum(abs(B))
+  }
+  pars <- list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+               B = B, FF = FF, E = E, W = W, mc.cores = mc.cores)
+  objs <- numeric(maxits)
+  feas <- numeric(maxits)
+  for (i in 1:maxits) {
+    pars <- do.call(admm_iterate, pars)
+    objs[i] <- do.call(objective, pars)
+    feas[i] <- with(pars, f2(Y - X %*% B - E - FF))
+  }
+  c(pars, list(objs = objs, feas = feas, objective = objective))
+}

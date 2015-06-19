@@ -12,7 +12,7 @@ nb <- dim(bvecs)[1]
 
 set.seed(2)
 pts <- metasub(xyz, 0.009, 10)
-dim(pts)
+p <- dim(pts)[1]
 plot3d(pts)
 
 ####
@@ -54,3 +54,9 @@ res_nn <- nuclear_opt(X, Y, 10.0, 10)
 B_nn <- res_nn$B
 Mu_nn <- X %*% B_nn
 (err_nn <- sum((Mu - Mu_nn)^2))
+
+res_admm <- admm_nuclear(X, Y, lambda = 0.1, nu = 0.2, rho = 2,
+                         mc.cores=3, maxits = 10)
+B_admm <- res_admm$B
+Mu_admm <- X %*% B_admm
+(err_admm <- sum((Mu - Mu_admm)^2))
