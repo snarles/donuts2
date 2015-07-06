@@ -7,8 +7,19 @@ library(magrittr)
 library(rgl)
 library(AnalyzeFMRI)
 library(pracma)
+source("theory/dwi.R")
 
 gimage <- function(a) image(fliplr(t(a)), col = gray(0:20/20))
+
+extract_vox <- function(V, vx) {
+  dm <- dim(V)
+  n <- dim(vx)[1]
+  ans <- matrix(0, n, dm[4])
+  for (i in 1:n) {
+    ans[i, ] <- V[vx[i, 1], vx[i, 2], vx[i, 3], ]
+  }
+  ans
+}
 
 #ddir <- function(s = "") paste0("/home/snarles/hcp/10s/115320/", s)
 ddir <- function(s = "") paste0("/home/snarles/predator/osmosis/", s)
@@ -20,13 +31,18 @@ list.files(ddir())
 
 ## ** B-values **
 
+set.seed(2)
+pts <- metasub(xyz, 0.009, 10)
+p <- dim(pts)[1]
+plot3d(pts)
+
 #bvals <- read.table(ddir("T1w/Diffusion/bvals"), header = FALSE, sep = "") %>% as.numeric
 bvi <- round(bvals/1000)
 #bvecs <- read.table(ddir("T1w/Diffusion/bvecs"), header = FALSE, sep = "") %>% 
-bvecs1 <- read.table(ddir("SUB1_b1000_1.bvecs"), header = FALSE, sep = "") %>% 
-  t %>% as.matrix
-bvecs2 <- read.table(ddir("SUB1_b1000_2.bvecs"), header = FALSE, sep = "") %>% 
-  t %>% as.matrix
+bvecs1 <- (read.table(ddir("SUB1_b1000_1.bvecs"), header = FALSE, sep = "") %>% 
+  t %>% as.matrix)[11:160, ]
+bvecs2 <- (read.table(ddir("SUB1_b1000_2.bvecs"), header = FALSE, sep = "") %>% 
+  t %>% as.matrix)[11:160, ]
 
 plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red")
 
@@ -60,9 +76,16 @@ dim(wms)
 
 max(wms)
 gimage(wms[, , 40])
-sum(wms > 1.9)
+sum(wms > 1.99)
 
-roi_inds <- which(wms > 1.9, arr.ind = TRUE)
+roi_inds <- which(wms > 1.99, arr.ind = TRUE)
 plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
 
-help(row)
+temp <- extract_vox(diff1, roi_inds)
+diff1r <- temp[, 11:160]
+so1r <- temp[, 1:10]
+
+kappa <- 1
+X1 <- cbind(1, stetan(bvecs1, pts, kappa))
+B_nnls <- multi_nnls(X1, t(diff1r)[, 1:10], mc.cores = 3)
+
