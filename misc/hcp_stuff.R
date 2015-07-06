@@ -5,6 +5,7 @@
 library(oro.nifti)
 library(magrittr)
 library(rgl)
+library(AnalyzeFMRI)
 
 ddir <- function(s = "") paste0("/home/snarles/hcp/10s/115320/", s)
 
@@ -24,3 +25,10 @@ comb <- cbind(bvi, bvecs)
 ## ** nifti **
 
 (hcp1 <- readNIfTI(ddir("T1w/Diffusion/data.nii.gz")))
+(hcp2 <- readNIfTI(ddir("T1w/Diffusion/grad_dev.nii.gz")))
+
+(hcp0 <- f.read.nifti.header(ddir("T1w/Diffusion/data.nii")))
+help(f.read.nifti.slice)
+aa <- f.read.nifti.slice(ddir("T1w/Diffusion/data.nii"), 10, 2)
+
+
