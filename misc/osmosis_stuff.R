@@ -87,5 +87,17 @@ so1r <- temp[, 1:10]
 
 kappa <- 1
 X1 <- cbind(1, stetan(bvecs1, pts, kappa))
-B_nnls <- multi_nnls(X1, t(diff1r)[, 1:10], mc.cores = 3)
+Y <- t(diff1r)#[, 1:10]
+B <- multi_nnls(X1, Y, mc.cores = 3)
+mu <- X1 %*% B
+resid <- Y - mu
 
+dim(resid)
+res <- svd(resid)
+dim(res$u)
+plot(res$u[, 1])
+
+cols <- hsv(h = 0.5, s = 1, v = 1:150/150)
+
+plot3d(bvecs1, col = cols[order(res$u[, 1])], size = 10)
+plot3d(bvecs1, col = cols[order(res$u[, 2])], size = 10)
