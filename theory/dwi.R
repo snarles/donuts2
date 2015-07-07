@@ -194,9 +194,11 @@ admm_nuclear <- function(X, Y, lambda, nu, rho,
   objs <- numeric(maxits)
   feas <- numeric(maxits)
   for (i in 1:maxits) {
+    t1 <- proc.time()
     pars <- do.call(admm_iterate, pars)
     objs[i] <- do.call(objective, pars)
     feas[i] <- with(pars, f2(Y - X %*% B - E - FF))
+    proc.time() - t1
   }
   c(pars, list(objs = objs, feas = feas, objective = objective))
 }

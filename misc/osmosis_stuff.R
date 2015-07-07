@@ -22,6 +22,10 @@ extract_vox <- function(V, vx) {
   ans
 }
 
+rank_k_approx <- function(resid, k = 1) {
+  res <- svd(resid, nu = k, nv = k)
+  res$u %*% (res$d[1:k] * t(res$v))
+}
 
 emds <- function(B1, B2, mc.cores = 3) {
   unlist(mclapply(1:dim(B1)[2], function(i) arc_emd(pts, B1[-1, i], pts, B2[-1, i]), mc.cores = mc.cores))
@@ -96,20 +100,44 @@ so2r <- temp[, 1:10]
 rm(diff2); gc()
 
 ####
+##  Correct for noise floor
+####
+
+res <- lm(apply(so1r, 1, var) ~ rowMeans(so1r))
+cf <- coef(res)
+plot(rowMeans(so1r), apply(so1r, 1, var))
+abline(a = cf[1], b = cf[2], col = "red", lwd = 2)
+
+
+res <- lm(apply(so2r, 1, var) ~ rowMeans(so2r))
+cf <- coef(res)
+plot(rowMeans(so2r), apply(so2r, 1, var))
+abline(a = cf[1], b = cf[2], col = "red", lwd = 2)
+
+mean(apply(so1r, 1, var))
+mean(rowSums(so1r^2))
+
+help(pmax)
+
+s2 <- 0
+Y1 <- t(diff1r)#[, 1:10]
+Y2 <- t(diff2r)#[, 1:10]
+Yc1 <- sqrt(pmax(Y1^2 - s2, 0))
+Yc2 <- sqrt(pmax(Y2^2 - s2, 0))
+
+####
 ##  Fit NNLS
 ####
 
-kappa <- 3
+kappa <- 2
 X1 <- cbind(1, stetan(bvecs1, pts, kappa))
-Y1 <- t(diff1r)#[, 1:10]
-B1 <- multi_nnls(X1, Y1, mc.cores = 3)
-mu1 <- X1 %*% B1
+B1 <- multi_nnls(X1, Yc1, mc.cores = 3)
+mu1 <- sqrt((X1 %*% B1)^2 + s2)
 resid1 <- Y1 - mu1
 
 X2 <- cbind(1, stetan(bvecs2, pts, kappa))
-Y2 <- t(diff2r)#[, 1:10]
-B2 <- multi_nnls(X2, Y2, mc.cores = 3)
-mu2 <- X2 %*% B2
+B2 <- multi_nnls(X2, Yc2, mc.cores = 3)
+mu2 <- sqrt((X2 %*% B2)^2 + s2)
 resid2 <- Y2 - mu2
 
 ####
@@ -117,8 +145,8 @@ resid2 <- Y2 - mu2
 ####
 
 n <- dim(roi_inds)[1]
-Yh1 <- X1 %*% B2
-Yh2 <- X2 %*% B1
+Yh1 <- sqrt((X1 %*% B2)^2 + s2)
+Yh2 <- sqrt((X2 %*% B1)^2 + s2)
 f2(Y1 - Yh1)/n ## 386109.4
 f2(Y2 - Yh2)/n ## 386306
 e_nnls <- emds(B1, B2, mc.cores = 3)
@@ -130,34 +158,24 @@ mean(e_nnls) ## 0.385
 ##  Look at the noise in a cluster
 ####
 
-layout(1)
-
-layout(matrix(1:2, 1, 2))
-plot(svd(resid1)$d)
-plot(svd(resid2)$d)
-ii <- ii + 1
-for (ii in 1:nclust) {
-  plot(svd(resid1[, clust == ii])$d)
-  title(paste(ii))  
-  plot(svd(resid2[, clust == ii])$d)
-  title(paste(ii))  
-}
-
-
-
+ii <- 1
 plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76), col = "green")
-points3d(roi_inds[clust == 11, , drop = FALSE], size = 4, col = "black")
-
-plot(svd(resid1[, clust == 11])$u[, 1])
-plot(svd(resid2[, clust == 11])$u[, 1])
+points3d(roi_inds[clust == ii, , drop = FALSE], size = 4, col = "black")
 
 layout(1)
 for (ii in 1:20) {
   plot(svd(resid1[, clust == ii])$u[, 1], svd(resid2[, clust == ii])$u[, 1])
-  title(paste(ii))  
+  title(paste(ii))
 }
 
+
+vv <- (clust == 20)[2]
+plot3d(mu1[, ii] * bvecs1)
+points3d((mu1[, ii] + rank_k_approx(resid1, 2)[, ii]) * bvecs1, col = "red")
 
 ####
 ## Apply ADMM 
 ####
+
+adr1 <- admm_nuclear(X1, Yc1, lambda = 0.1, nu = 0.1, rho = 1, mc.cores = 3)
+
