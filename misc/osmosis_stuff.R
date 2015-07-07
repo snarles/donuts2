@@ -9,6 +9,7 @@ library(AnalyzeFMRI)
 library(pracma)
 source("theory/dwi.R")
 
+plots <- FALSE
 gimage <- function(a) image(fliplr(t(a)), col = gray(0:20/20))
 
 extract_vox <- function(V, vx) {
@@ -40,7 +41,7 @@ list.files(ddir())
 set.seed(2)
 pts <- metasub(xyz, 0.009, 10)
 p <- dim(pts)[1]
-plot3d(pts)
+if (plots) plot3d(pts)
 
 #bvals <- read.table(ddir("T1w/Diffusion/bvals"), header = FALSE, sep = "") %>% as.numeric
 bvi <- round(bvals/1000)
@@ -50,7 +51,7 @@ bvecs1 <- (read.table(ddir("SUB1_b1000_1.bvecs"), header = FALSE, sep = "") %>%
 bvecs2 <- (read.table(ddir("SUB1_b1000_2.bvecs"), header = FALSE, sep = "") %>% 
   t %>% as.matrix)[11:160, ]
 
-plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red")
+if (plots) plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red")
 
 ## ** nifti **
 (wm1 <- readNIfTI(ddir("SUB1_wm_mask.nii.gz")))
@@ -59,35 +60,28 @@ plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red")
 dim(wm1) # 81 106 76
 dim(wm2) # 81 106 76
 
-# gimage(wm1[, , 30])
-# gimage(wm2[, , 30])
-# 
-# gimage(wm1[, , 40])
-# gimage(wm2[, , 40])
-# 
-# ## wm consensus
-# wmc <- wm1 * wm2
-# 
-# gimage(wmc[, , 40])
-
-## smoothed WM (to find wm ROIs)
+## Determine ROIs
 
 wms <- GaussSmoothArray(wm1 + wm2, ksize = 17)
 dim(wms)
 
 max(wms)
-gimage(wms[, , 40])
+if (plots) gimage(wms[, , 40])
 sum(wms > 1.99)
 
 roi_inds <- which(wms > 1.99, arr.ind = TRUE)
-plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
+if (plots) plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
 
 nclust <- 20
 clust <- kmeans(roi_inds, nclust, nstart = 10)$cluster
-plot3d(0, 0, 0, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
-for (i in 1:nclust) {
-  points3d(roi_inds[clust == i, , drop = FALSE], col = rainbow(nclust)[i])
+if (plots) {
+  plot3d(0, 0, 0, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
+  for (i in 1:nclust) {
+    points3d(roi_inds[clust == i, , drop = FALSE], col = rainbow(nclust)[i])
+  }  
 }
+
+## Get data
 
 (diff1 <- readNIfTI(ddir("SUB1_b1000_1.nii.gz")))
 temp <- extract_vox(diff1, roi_inds)
@@ -100,6 +94,10 @@ temp <- extract_vox(diff2, roi_inds)
 diff2r <- temp[, 11:160]
 so2r <- temp[, 1:10]
 rm(diff2); gc()
+
+####
+##  Fit NNLS
+####
 
 kappa <- 3
 X1 <- cbind(1, stetan(bvecs1, pts, kappa))
@@ -114,30 +112,17 @@ B2 <- multi_nnls(X2, Y2, mc.cores = 3)
 mu2 <- X2 %*% B2
 resid2 <- Y2 - mu2
 
+####
+##  Check prediction error of NNLS
+####
 
-#dm <- as.matrix(dist(roi_inds))
-#dim(dm)
-
-# dim(resid)
-# res <- svd(resid)
-# dim(res$u)
-# plot(res$u[, 1])
-# 
-# cols <- hsv(h = 0.5, s = 1, v = 1:150/150)
-# 
-# plot3d(bvecs1, col = cols[order(res$u[, 1])], size = 10)
-# plot3d(bvecs1, col = cols[order(res$u[, 2])], size = 10)
-# 
-# 
-# plot3d(bvecs1, col = cols[order(mu[, 3])], size = 10)
-# 
-# 
-# plot3d(mu[, 3] * bvecs1, size = 5)
-# points3d(Y[, 3] * bvecs1, size = 5, col = "red")
-# 
-# min(resid[, 3])
-# plot3d((resid[, 3] + 80) * bvecs1, size = 5)
-
+n <- dim(roi_inds)[1]
+Yh1 <- X1 %*% B2
+Yh2 <- X2 %*% B1
+f2(Y1 - Yh1)/n ## 386109.4
+f2(Y2 - Yh2)/n ## 386306
+e_nnls <- emds(B1, B2, mc.cores = 3)
+mean(e_nnls) ## 0.385
 
 
 
@@ -172,17 +157,6 @@ for (ii in 1:20) {
   title(paste(ii))  
 }
 
-####
-##  Check prediction error of NNLS
-####
-
-n <- dim(roi_inds)[1]
-Yh1 <- X1 %*% B2
-Yh2 <- X2 %*% B1
-f2(Y1 - Yh1)/n ## 695383108
-f2(Y2 - Yh2)/n ## 695737087
-e_nnls <- emds(B1, B2, mc.cores = 3)
-mean(e_nnls) ## 0.385
 
 ####
 ## Apply ADMM 
