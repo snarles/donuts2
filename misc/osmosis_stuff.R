@@ -31,6 +31,12 @@ emds <- function(B1, B2, mc.cores = 3) {
   unlist(mclapply(1:dim(B1)[2], function(i) arc_emd(pts, B1[-1, i], pts, B2[-1, i]), mc.cores = mc.cores))
 }
 
+zattach <- function(ll) {
+  for (i in 1:length(ll)) {
+    assign(names(ll)[i], ll[[i]], envir=globalenv())
+  }
+}
+
 
 #ddir <- function(s = "") paste0("/home/snarles/hcp/10s/115320/", s)
 ddir <- function(s = "") paste0("/home/snarles/predator/osmosis/", s)
@@ -48,14 +54,14 @@ p <- dim(pts)[1]
 if (plots) plot3d(pts)
 
 #bvals <- read.table(ddir("T1w/Diffusion/bvals"), header = FALSE, sep = "") %>% as.numeric
-bvi <- round(bvals/1000)
+#bvi <- round(bvals/1000)
 #bvecs <- read.table(ddir("T1w/Diffusion/bvecs"), header = FALSE, sep = "") %>% 
 bvecs1 <- (read.table(ddir("SUB1_b1000_1.bvecs"), header = FALSE, sep = "") %>% 
   t %>% as.matrix)[11:160, ]
 bvecs2 <- (read.table(ddir("SUB1_b1000_2.bvecs"), header = FALSE, sep = "") %>% 
   t %>% as.matrix)[11:160, ]
 
-if (plots) plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red")
+if (plots) { plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red") }
 
 ## ** nifti **
 (wm1 <- readNIfTI(ddir("SUB1_wm_mask.nii.gz")))
@@ -131,7 +137,9 @@ Yc2 <- sqrt(pmax(Y2^2 - s2, 0))
 
 kappa <- 2
 X1 <- cbind(1, stetan(bvecs1, pts, kappa))
+t1 <- proc.time()
 B1 <- multi_nnls(X1, Yc1, mc.cores = 3)
+proc.time() - t1
 mu1 <- sqrt((X1 %*% B1)^2 + s2)
 resid1 <- Y1 - mu1
 
@@ -139,6 +147,26 @@ X2 <- cbind(1, stetan(bvecs2, pts, kappa))
 B2 <- multi_nnls(X2, Yc2, mc.cores = 3)
 mu2 <- sqrt((X2 %*% B2)^2 + s2)
 resid2 <- Y2 - mu2
+
+## test admm
+lambda <- 0.1
+nu <- 0.1
+rho <- 1
+X <- X1
+Y <- Yc1
+B = 0 * zeros(dim(X)[2], dim(Y)[2])
+FF = 0 * Y
+E = Y
+W = 0 * Y
+mc.cores = 3
+maxits = 10
+pars <- list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
+             B = B, FF = FF, E = E, W = W, mc.cores = mc.cores)
+pars0 <- pars
+t1 <- proc.time()
+pars <- do.call(admm_iterate, pars)
+proc.time() - t1
+pars1 <- pars
 
 ####
 ##  Check prediction error of NNLS
