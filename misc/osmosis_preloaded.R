@@ -104,6 +104,72 @@ mean(e_nnls) ## 0.4605736
 ##  Look at the noise in a cluster
 ####
 
+library(fastICA)
+
+
+
+layout(matrix(1:2, 1, 2))
+for (ii in 1:20) {
+  plot(svd(Y1[, clust == ii])$u[, 1], svd(Y2[, clust == ii])$u[, 1])
+  title("U")
+  plot(svd(Y1[, clust == ii])$v[, 1], svd(Y2[, clust == ii])$v[, 1])
+  title(paste(ii))
+}
+
+layout(matrix(1:2, 1, 2))
+for (ii in 1:20) {
+  plot(svd(resid1[, clust == ii])$u[, 1], svd(resid2[, clust == ii])$u[, 1])
+  title("U")
+  plot(svd(resid1[, clust == ii])$v[, 1], svd(resid2[, clust == ii])$v[, 1])
+  title(paste(ii))
+}
+
+
+ii <- 1
+
+## TRY ICA
+
+layout(t(1:2))
+for (ii in 1:20) {
+  res1 <- fastICA(X=resid1[, clust == ii], n.comp=20)
+  res2 <- fastICA(X=resid2[, clust == ii], n.comp=20)
+  plot(res1$S[, 1], res2$S[, 1])
+  title(paste(ii), sub = "1")
+  plot(res1$S[, 2], res2$S[, 2])
+  title(paste(ii), sub = "1")
+}
+
+
+layout(t(1:2))
+for (ii in 1:20) {
+  res1 <- fastICA(X=Y1[, clust == ii], n.comp=20)
+  res2 <- fastICA(X=Y2[, clust == ii], n.comp=20)
+  plot(res1$S[, 1], res2$S[, 1])
+  title(paste(ii), sub = "1")
+  plot(res1$S[, 2], res2$S[, 2])
+  title(paste(ii), sub = "1")
+}
+
+
+layout(1)
+
+
+res1 <- fastICA(X=t(resid1), n.comp=100)
+plot(res1$S[, 3])
+
+ki <- 1
+plot3d(roi_inds[res1$S[, ki] > 2, ], 
+       xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76), col = "green")
+points3d(roi_inds[res1$S[, ki] < -2, ], 
+       xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76), col = "red")
+
+
+help(fastICA)
+names(resICA)
+dim(resICA$S)
+
+
+
 plot(svd(resid1)$d)
 
 ii <- 1
@@ -148,6 +214,8 @@ for (ii in 1:20) {
   plot(svd(Y1[, clust == ii])$u[, 4], svd(Y2[, clust == ii])$u[, 4])
   title(paste(ii))
 }
+
+
 
 
 
