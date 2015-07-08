@@ -129,6 +129,68 @@ ii <- 1
 
 ## TRY ICA
 
+cm <- hsv(h = 0.5, s = 1, v = 1:100/100)
+spplot <- function(x, ...) {
+  cols <- cm[floor(99 * (x - min(x))/(max(x) - min(x))) + 1]
+  plot3d(roi_inds, col = cols, ...)
+}
+
+bvplot <- function(x, ...) {
+  cols <- cm[floor(99 * (x - min(x))/(max(x) - min(x))) + 1]
+  plot3d(bvecs1, col = cols, ...)
+}
+
+bvplot2 <- function(x, eps = 0.1, ...) {
+  mod <- x/sd(x)
+  cols <- cm[floor(99 * (x - min(x))/(max(x) - min(x))) + 1]
+  plot3d(pts, col = "gray")  
+  points3d((1 + eps * mod) * bvecs1, col = cols, ...)
+}
+
+
+res1 <- ICAspat(Y1, n.comp=149)
+names(res1)
+dim(res1$time.series) # 150 100
+dim(res1$spatial.components) # 100 1801
+
+o <- order(-apply(res1$time.series, 2, var))
+TS <- res1$time.series[, o]
+SC <- res1$spatial.components[o, ]
+
+dim(TS)
+dim(SC)
+f2(scale(Y1, center=TRUE, scale = FALSE) - 
+     res1$time.series %*% res1$spatial.components)
+f2(scale(Y1, center=TRUE, scale = FALSE))
+
+dim(res1$spatial.components)
+
+spplot(SC[1, ], size = 9)
+spplot(SC[2, ], size = 9)
+spplot(SC[3, ], size = 9)
+spplot(SC[4, ], size = 9)
+spplot(SC[5, ], size = 9)
+spplot(SC[6, ], size = 9)
+spplot(SC[7, ], size = 9)
+spplot(SC[8, ], size = 9)
+spplot(SC[9, ], size = 9)
+spplot(SC[10, ], size = 9)
+spplot(SC[11, ], size = 9)
+
+bvplot(TS[, 1], size = 50)
+bvplot2(TS[, 1], size = 20)
+
+bvplot2(TS[, 1], size = 20)
+bvplot2(TS[, 2], size = 20)
+bvplot2(TS[, 3], size = 20)
+bvplot2(TS[, 4], size = 20)
+bvplot2(TS[, 5], size = 20)
+bvplot2(TS[, 6], size = 20)
+bvplot2(TS[, 7], size = 20)
+
+bvplot(1:150, size = 50)
+
+
 layout(t(1:2))
 for (ii in 1:20) {
   res1 <- fastICA(X=resid1[, clust == ii], n.comp=20)
