@@ -38,79 +38,12 @@ zattach <- function(ll) {
   }
 }
 
-
-#ddir <- function(s = "") paste0("/home/snarles/hcp/10s/115320/", s)
-ddir <- function(s = "") paste0("/home/snarles/predator/osmosis/", s)
-
-
-#list.files(ddir("T1w/Diffusion"))
-list.files(ddir())
-
-
-## ** B-values **
-
 set.seed(2)
 pts <- metasub(xyz, 0.009, 10)
 p <- dim(pts)[1]
 if (plots) plot3d(pts)
 
-#bvals <- read.table(ddir("T1w/Diffusion/bvals"), header = FALSE, sep = "") %>% as.numeric
-#bvi <- round(bvals/1000)
-#bvecs <- read.table(ddir("T1w/Diffusion/bvecs"), header = FALSE, sep = "") %>% 
-bvecs1 <- (read.table(ddir("SUB1_b1000_1.bvecs"), header = FALSE, sep = "") %>% 
-  t %>% as.matrix)[11:160, ]
-bvecs2 <- (read.table(ddir("SUB1_b1000_2.bvecs"), header = FALSE, sep = "") %>% 
-  t %>% as.matrix)[11:160, ]
-
-if (plots) { plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red") }
-
-## ** nifti **
-(wm1 <- readNIfTI(ddir("SUB1_wm_mask.nii.gz")))
-(wm2 <- readNIfTI(ddir("SUB2_wm_mask.nii.gz")))
-
-dim(wm1) # 81 106 76
-dim(wm2) # 81 106 76
-
-## Determine ROIs
-
-wms <- GaussSmoothArray(wm1 + wm2, ksize = 17)
-dim(wms)
-
-max(wms)
-if (plots) gimage(wms[, , 40])
-sum(wms > 1.99)
-
-roi_inds <- which(wms > 1.99, arr.ind = TRUE)
-if (plots) plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
-
-nclust <- 20
-set.seed(2)
-clust <- kmeans(roi_inds, nclust, nstart = 10)$cluster
-if (plots) {
-  plot3d(0, 0, 0, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
-  for (i in 1:nclust) {
-    points3d(roi_inds[clust == i, , drop = FALSE], col = rainbow(nclust)[i])
-  }  
-}
-
-## Get data
-
-(diff1 <- readNIfTI(ddir("SUB1_b1000_1.nii.gz")))
-temp <- extract_vox(diff1, roi_inds)
-diff1r <- temp[, 11:160]
-so1r <- temp[, 1:10]
-rm(diff1); gc()
-
-(diff2 <- readNIfTI(ddir("SUB2_b1000_1.nii.gz")))
-temp <- extract_vox(diff2, roi_inds)
-diff2r <- temp[, 11:160]
-so2r <- temp[, 1:10]
-rm(diff2); gc()
-
-## Save data
-save(list=c("diff1r", "so1r", "diff2r", "so2r", "bvecs1", "bvecs2",
-            "roi_inds", "clust"),
-     file="data/osmosis1801.RData")
+load('data/osmosis1801.RData')
 
 ####
 ##  Correct for noise floor
@@ -118,19 +51,17 @@ save(list=c("diff1r", "so1r", "diff2r", "so2r", "bvecs1", "bvecs2",
 
 res <- lm(apply(so1r, 1, var) ~ rowMeans(so1r))
 cf <- coef(res)
-plot(rowMeans(so1r), apply(so1r, 1, var))
-abline(a = cf[1], b = cf[2], col = "red", lwd = 2)
+if (plots) plot(rowMeans(so1r), apply(so1r, 1, var))
+if (plots) abline(a = cf[1], b = cf[2], col = "red", lwd = 2)
 
 
 res <- lm(apply(so2r, 1, var) ~ rowMeans(so2r))
 cf <- coef(res)
-plot(rowMeans(so2r), apply(so2r, 1, var))
-abline(a = cf[1], b = cf[2], col = "red", lwd = 2)
+if (plots) plot(rowMeans(so2r), apply(so2r, 1, var))
+if (plots) abline(a = cf[1], b = cf[2], col = "red", lwd = 2)
 
 mean(apply(so1r, 1, var))
 mean(rowSums(so1r^2))
-
-help(pmax)
 
 s2 <- 0
 Y1 <- t(diff1r)#[, 1:10]
@@ -142,7 +73,7 @@ Yc2 <- sqrt(pmax(Y2^2 - s2, 0))
 ##  Fit NNLS
 ####
 
-kappa <- 3
+kappa <- 1
 X1 <- cbind(1, stetan(bvecs1, pts, kappa))
 t1 <- proc.time()
 B1 <- multi_nnls(X1, Yc1, mc.cores = 3)
@@ -162,10 +93,10 @@ resid2 <- Y2 - mu2
 n <- dim(roi_inds)[1]
 Yh1 <- sqrt((X1 %*% B2)^2 + s2)
 Yh2 <- sqrt((X2 %*% B1)^2 + s2)
-f2(Y1 - Yh1)/n ## 386109.4
-f2(Y2 - Yh2)/n ## 386306
+f2(Y1 - Yh1)/n ## 373075.8
+f2(Y2 - Yh2)/n ## 376634.2
 e_nnls <- emds(B1, B2, mc.cores = 3)
-mean(e_nnls) ## 0.385
+mean(e_nnls) ## 0.4605736
 
 
 
@@ -173,10 +104,6 @@ mean(e_nnls) ## 0.385
 ##  Look at the noise in a cluster
 ####
 
-ii <- 1
-plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76), col = "green")
-points3d(roi_inds[clust == ii, , drop = FALSE], size = 4, col = "black")
-points3d(roi_inds[clust == jj, , drop = FALSE], size = 4, col = "yellow")
 
 
 layout(1)
@@ -185,13 +112,15 @@ for (ii in 1:20) {
   title(paste(ii))
 }
 
-jj <- 11
+ii <- 18; jj <- 19
+plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76), col = "green")
+points3d(roi_inds[clust == ii, , drop = FALSE], size = 4, col = "black")
+points3d(roi_inds[clust == jj, , drop = FALSE], size = 4, col = "yellow")
 plot(svd(resid1[, clust == ii])$u[, 1], svd(resid2[, clust == jj])$u[, 1])
 
 
-ii <- 20
 k <- 1
-vv <- 3
+vv <- 2
 plot3d(mu1[, clust==ii][, vv] * bvecs1)
 points3d((mu1[, clust==ii][, vv] + rank_k_approx(resid1[, clust == ii], k)[, vv]) * bvecs1, col = "red")
 
@@ -199,12 +128,12 @@ points3d((mu1[, clust==ii][, vv] + rank_k_approx(resid1[, clust == ii], k)[, vv]
 ##  Cross-residual prediction
 ####
 
-ii <- 20
+ii <- 17
 nf <- 0.05
 errs1 <- numeric()
 errs2 <- numeric()
 n <- sum(clust == ii)
-for (k in 1:10) {
+for (k in 1:20) {
   Yh1 <- X1 %*% B2[, clust == ii] + nf * rank_k_approx(resid2[, clust == ii], k)
   Yh2 <- X2 %*% B1[, clust == ii] + nf * rank_k_approx(resid1[, clust == ii], k)
   errs1[k] <- f2(Y1[, clust == ii] - Yh1)/n
@@ -219,17 +148,18 @@ plot(errs2, type = "l")
 ## Apply ADMM 
 ####
 
-ii <- 20
+ii <- 19
 lambda <- 0.1
 nu <- 0.1
 rho <- 1
 mcc <- 3
+t1 <- proc.time()
 adr1 <- admm_nuclear(X1, Yc1[, clust == ii],
                      lambda = lambda, nu = nu, rho = rho, mc.cores = mcc)
-t1 <- proc.time()
+proc.time() - t1
 adr2 <- admm_nuclear(X2, Yc2[, clust == ii],
                      lambda = lambda, nu = nu, rho = rho, mc.cores = mcc)
-proc.time() - t1
+
 
 
 ## corellation between noise

@@ -180,7 +180,7 @@ admm_iterate <- function(X, Y, lambda, nu, rho, B, FF, E, W,
   # Update W
   W <- W - (Y - XB - FF - E)
   list(X = X, Y = Y, lambda = lambda, nu = nu, rho = rho,
-       B = B, FF = FF, E = E, W = W)
+       B = B, FF = FF, E = E, W = W, mc.cores = mc.cores)
 }
 admm_nuclear <- function(X, Y, lambda, nu, rho, 
                          B = 0 * zeros(dim(X)[2], dim(Y)[2]),
