@@ -104,11 +104,56 @@ mean(e_nnls) ## 0.4605736
 ##  Look at the noise in a cluster
 ####
 
+plot(svd(resid1)$d)
+
+ii <- 1
+plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76), col = "green")
+points3d(roi_inds[clust == ii, , drop = FALSE], size = 4, col = "black")
+
+plot(Y1[, clust == ii][, 1], type = "l")
+lines(Y2[, clust == ii][, 1], col = "red")
+
+plot(Y1[, clust == ii][, 1], Y2[, clust == ii][, 1])
+plot(Y1[, clust == ii][, 1], mu1[, clust == ii][, 1])
+plot(Y2[, clust == ii][, 1], mu2[, clust == ii][, 1])
+plot(mu1[, clust == ii][, 1], mu2[, clust == ii][, 1])
+plot(resid1[, clust == ii][, 1], resid2[, clust == ii][, 1])
+
+
+plot(resid1[, clust == ii][, 1], type = "l")
+lines(resid2[, clust == ii][, 1], col = "red")
+
+plot(resid1[, clust == ii][, 2], type = "l")
+
+
+
+plot(svd(resid1[, clust == ii])$u[, 1], type = "l")
+lines(-svd(resid2[, clust == ii])$u[, 1], type = "l", col = "red")
+
+
+plot(mu1[, clust == ii], mu2[, clust == ii])
+
+
+plot(svd(Y1)$d)
+
+
+for (ii in 1:20) {
+  plot(svd(Y1[, clust == ii])$d)
+  title(paste(ii))
+}
 
 
 layout(1)
 for (ii in 1:20) {
-  plot(svd(resid1[, clust == ii])$u[, 1], svd(resid2[, clust == ii])$u[, 1])
+  plot(svd(Y1[, clust == ii])$u[, 4], svd(Y2[, clust == ii])$u[, 4])
+  title(paste(ii))
+}
+
+
+
+layout(1)
+for (ii in 1:20) {
+  plot(svd(resid1[, clust == ii])$u[, 2], svd(resid2[, clust == ii])$u[, 2])
   title(paste(ii))
 }
 

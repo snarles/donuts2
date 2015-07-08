@@ -62,7 +62,7 @@ bvecs1 <- (read.table(ddir("SUB1_b1000_1.bvecs"), header = FALSE, sep = "") %>%
 bvecs2 <- (read.table(ddir("SUB1_b1000_2.bvecs"), header = FALSE, sep = "") %>% 
   t %>% as.matrix)[11:160, ]
 
-if (plots) { plot3d(bvecs1); points3d(1.01 * bvecs2, col = "red") }
+if (plots) { plot3d(bvecs1, size = 5); points3d(1.01 * bvecs2, col = "red", size = 5) }
 
 ## ** nifti **
 (wm1 <- readNIfTI(ddir("SUB1_wm_mask.nii.gz")))
@@ -185,15 +185,34 @@ for (ii in 1:20) {
   title(paste(ii))
 }
 
+layout(matrix(1:2, 1, 2))
+for (ii in 1:20) {
+  plot(svd(Y1[, clust == ii])$u[, 1], svd(Y2[, clust == ii])$u[, 1])
+  title("U")
+  plot(svd(Y1[, clust == ii])$v[, 1], svd(Y2[, clust == ii])$v[, 1])
+  title(paste(ii))
+}
+
+layout(matrix(1:2, 1, 2))
+for (ii in 1:20) {
+  plot(svd(resid1[, clust == ii])$u[, 1], svd(resid2[, clust == ii])$u[, 1])
+  title("U")
+  resid1[, clust == ii])$u[, 1]
+  plot(svd(resid1[, clust == ii])$v[, 1], svd(resid2[, clust == ii])$v[, 1])
+  title(paste(ii))
+}
+
+
+
 jj <- 11
 plot(svd(resid1[, clust == ii])$u[, 1], svd(resid2[, clust == jj])$u[, 1])
 
 
-ii <- 20
+ii <- 19
 k <- 1
 vv <- 3
 plot3d(mu1[, clust==ii][, vv] * bvecs1)
-points3d((mu1[, clust==ii][, vv] + rank_k_approx(resid1[, clust == ii], k)[, vv]) * bvecs1, col = "red")
+points3d((mu1[, clust==ii][, vv] + 3 * rank_k_approx(resid1[, clust == ii], k)[, vv]) * bvecs1, col = "red")
 
 ####
 ##  Cross-residual prediction
