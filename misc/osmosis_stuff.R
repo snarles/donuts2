@@ -78,14 +78,14 @@ dim(wms)
 
 max(wms)
 if (plots) gimage(wms[, , 40])
-sum(wms > 1.99)
+sum(wms > 1.9)
 
-roi_inds <- which(wms > 1.99, arr.ind = TRUE)
+roi_inds <- which(wms > 1.9, arr.ind = TRUE)
 if (plots) plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
 
-nclust <- 20
+nclust <- 50
 set.seed(2)
-clust <- kmeans(roi_inds, nclust, nstart = 10)$cluster
+clust <- kmeans(roi_inds, nclust, nstart = 10, iter.max = 30)$cluster
 if (plots) {
   plot3d(0, 0, 0, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
   for (i in 1:nclust) {
@@ -110,7 +110,7 @@ rm(diff2); gc()
 ## Save data
 save(list=c("diff1r", "so1r", "diff2r", "so2r", "bvecs1", "bvecs2",
             "roi_inds", "clust"),
-     file="data/osmosis1801.RData")
+     file="data/osmosis7804.RData")
 
 ####
 ##  Correct for noise floor

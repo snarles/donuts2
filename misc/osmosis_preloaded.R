@@ -43,7 +43,7 @@ pts <- metasub(xyz, 0.009, 10)
 p <- dim(pts)[1]
 if (plots) plot3d(pts)
 
-load('data/osmosis1801.RData')
+load('data/osmosis7804.RData')
 
 ####
 ##  Correct for noise floor
@@ -185,8 +185,20 @@ bvplot2(TS[, 2], size = 20)
 bvplot2(TS[, 3], size = 20)
 bvplot2(TS[, 4], size = 20)
 bvplot2(TS[, 5], size = 20)
-bvplot2(TS[, 6], size = 20)
-bvplot2(TS[, 7], size = 20)
+bvplot2(TS[,10], size = 20)
+bvplot2(TS[,15], size = 20)
+bvplot2(TS[,20], size = 20)
+bvplot2(TS[,25], size = 20)
+bvplot2(TS[,30], size = 20)
+bvplot2(TS[,35], size = 20)
+bvplot2(TS[,40], size = 20)
+bvplot2(TS[,50], size = 20)
+bvplot2(TS[,60], size = 20)
+bvplot2(TS[,70], size = 20)
+bvplot2(TS[,80], size = 20)
+bvplot2(TS[,100], size = 20)
+bvplot2(TS[,120], size = 20)
+bvplot2(TS[,140], size = 20)
 
 bvplot(1:150, size = 50)
 
