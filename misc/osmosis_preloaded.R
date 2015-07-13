@@ -129,9 +129,13 @@ ii <- 1
 
 ## TRY ICA
 
-cm <- hsv(h = 0.5, s = 1, v = 1:100/100)
-spplot <- function(x, ...) {
-  cols <- cm[floor(99 * (x - min(x))/(max(x) - min(x))) + 1]
+cm <- hsv(h = 0.5, s = 1, v = 1:100/100, alpha=1:100/100)
+cm2 <- hsv(h = 0.9, s = 1, v = 1:100/100, alpha=1:100/100)
+spplot <- function(x0, ...) {
+  x <- abs(x0)
+  cols <- ifelse(x0 > 0, 
+                 cm[floor(99 * (x - min(x))/(max(x) - min(x))) + 1],
+                 cm2[floor(99 * (x - min(x))/(max(x) - min(x))) + 1])
   plot3d(roi_inds, col = cols, ...)
 }
 
@@ -199,6 +203,8 @@ bvplot2(TS[,80], size = 20)
 bvplot2(TS[,100], size = 20)
 bvplot2(TS[,120], size = 20)
 bvplot2(TS[,140], size = 20)
+
+spplot(SC[140, ], size = 9)
 
 bvplot(1:150, size = 50)
 
