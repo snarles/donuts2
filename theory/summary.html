@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>DWI denoise project</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<h1>DWI denoise project</h1>
+
+<p>Suppose we measure a subject&#39;s brain (consisting of \(v\) voxels) given a sequence of gradients \(g_1,&hellip;, g_n\),
+for example \(n = 150\).  Let \(y_{ij}\) denote the intensity of the \(j\) th voxel in the \(i\) th direction, and let \(Y\) be the \(n\) \times \(v\) matrix for the diffusion data.
+We imagine that each voxel consists of a mixture of fiber populations.
+Let \(u_1,&hellip;,u_p\) be a spherical sample of possible fiber directions, e.g. \(p = 10000\).
+Suppose the proportion of fiber directions in voxel \(j\) is described by a sparse vector \(\beta_j\), and the baseline intensity of that voxel is \(s_j\).
+Suppose we repeat the experiment \(k\) times to obtain \(Y^{(1)},&hellip;, Y^{(k)}\).</p>
+
+<p>The two problems we consider are as follows</p>
+
+<ul>
+<li>Estimation: Recovering \(\beta_j\) in each voxel, minimizing earh mover&#39;s distance (EMD)</li>
+<li>Denoising: Estimating \(\mathbb{E}[y_{ij}]\) for a new repeat, minimizing squared-error loss (either \(\mathbb{E}[(y_{ij} - \hat{y}_{ij})^2]\) or \(\mathbb{E}[(y_{ij}^2 - \hat{y}_{ij}^2)^2]\).)</li>
+</ul>
+
+<p>We consider two approaches: a &ldquo;baseline&rdquo; approach (which is basically NNLS) and a &ldquo;noise modelling&rdquo; approach, which uses a more sophisticated model for the signal and noise.</p>
+
+<h3>SFM I</h3>
+
+<p>In the &ldquo;baseline&rdquo; approach, we assume that</p>
+
+<p>\[
+y_{ij} \approx s_j \sum_{k=1}^p \beta_{j, k} \exp[-b[(\lambda_1 - \lambda_2)(g_i^T u_k)^2 - \lambda_2]]
+\]</p>
+
+<p>We estimate \(\lambda_1, \lambda_2\) by fitting the tensor model to corpus callosum.
+Having estimated \(\lambda_1, \lambda_2\), we fit each individual voxel \(Y_j\) by
+\[
+\hat{\beta}_j = \text{argmin}_\beta || (Y_j/s_j) - X\beta_j||^2 
+\]
+where \(X\) has the entries
+\[
+X_{ij} = \exp[-b[(\lambda_1 - \lambda_2)(g_i^T u_j)^2 - \lambda_2]]
+\]</p>
+
+<p>Then, for denoising, we predict
+\[
+\hat{Y}_j = s_j X\hat{\beta}_j
+\]</p>
+
+</body>
+
+</html>

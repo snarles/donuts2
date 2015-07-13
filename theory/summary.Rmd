@@ -1,0 +1,40 @@
+DWI denoise project
+========================================================
+
+Suppose we measure a subject's brain (consisting of $v$ voxels) given a sequence of gradients $g_1,..., g_n$,
+for example $n = 150$.  Let $y_{ij}$ denote the intensity of the $j$ th voxel in the $i$ th direction, and let $Y$ be the $n$ \times $v$ matrix for the diffusion data.
+We imagine that each voxel consists of a mixture of fiber populations.
+Let $u_1,...,u_p$ be a spherical sample of possible fiber directions, e.g. $p = 10000$.
+Suppose the proportion of fiber directions in voxel $j$ is described by a sparse vector $\beta_j$, and the baseline intensity of that voxel is $s_j$.
+Suppose we repeat the experiment $k$ times to obtain $Y^{(1)},..., Y^{(k)}$.
+
+The two problems we consider are as follows
+
+ * Estimation: Recovering $\beta_j$ in each voxel, minimizing earh mover's distance (EMD)
+ * Denoising: Estimating $\mathbb{E}[y_{ij}]$ for a new repeat, minimizing squared-error loss (either $\mathbb{E}[(y_{ij} - \hat{y}_{ij})^2]$ or $\mathbb{E}[(y_{ij}^2 - \hat{y}_{ij}^2)^2]$.)
+
+We consider two approaches: a "baseline" approach (which is basically NNLS) and a "noise modelling" approach, which uses a more sophisticated model for the signal and noise.
+
+### SFM I
+
+In the "baseline" approach, we assume that
+
+$$
+y_{ij} \approx s_j \sum_{k=1}^p \beta_{j, k} \exp[-b[(\lambda_1 - \lambda_2)(g_i^T u_k)^2 - \lambda_2]]
+$$
+
+We estimate $\lambda_1, \lambda_2$ by fitting the tensor model to corpus callosum.
+Having estimated $\lambda_1, \lambda_2$, we fit each individual voxel $Y_j$ by
+$$
+\hat{\beta}_j = \text{argmin}_\beta || (Y_j/s_j) - X\beta_j||^2 
+$$
+where $X$ has the entries
+$$
+X_{ij} = \exp[-b[(\lambda_1 - \lambda_2)(g_i^T u_j)^2 - \lambda_2]]
+$$
+
+Then, for denoising, we predict
+$$
+\hat{Y}_j = s_j X\hat{\beta}_j
+$$
+
