@@ -15,7 +15,7 @@ The two problems we consider are as follows
 
 We consider two approaches: a "baseline" approach (which is basically NNLS) and a "noise modelling" approach, which uses a more sophisticated model for the signal and noise.
 
-### SFM I
+### Baseline
 
 In the "baseline" approach, we assume that
 
@@ -37,4 +37,74 @@ Then, for denoising, we predict
 $$
 \hat{Y}_j = s_j X\hat{\beta}_j
 $$
+
+### Debiasing
+
+The baseline approach uses the wrong noise model.  In fact, we have
+$$
+\mathbb{E}[y_{ij}] \approx s_j f(\sum_{k=1}^p \beta_{j, k} \exp[-b[(\lambda_1 - \lambda_2)(g_i^T u_k)^2 - \lambda_2]])
+$$
+where $f$ is some non-linear function.
+
+To correct for the nonlinearity, we transform $Y_j$ by
+$$
+\tilde{y}_{ij} = \sqrt{(y_{ij}^2 - t_j)}
+$$
+where $t_j$ is determined based on the noise level in that voxel.
+
+Fitting NNLS to $\tilde{y}$ improves both denoising and estimation in the simulation.
+We can see that debiasing improves denoising in data, but we cannot measure estimation error with real data.
+
+### Model misspecification and correlated noise
+
+The most sophisticated approach includes model misspecification and correlated noise.
+Let $Y$ denote voxels in a small region of interest.
+Again, $Y^{(i)}$ denote repeats
+In this model,
+
+$$
+Y = f(XB + C + DF^{(i)} + U^{(i)}V^{(i)}) + E
+$$
+where:
+
+ * $B$ is the fiber configuration
+ * $C$ is a model misspecification term,
+indicating true signal that was misspecified
+ * $D$ are "spatial" noise components which are common to repeated experiments
+ * $F^{(i)}$ are spatial noise terms which are random from experiement to experiemnt
+ * $U^{(i)}$ and $V^{(i)}$ denote low-rank noise which is random from experiment to experiement
+ * $E$ is unstructured noise
+ 
+To fit the model, we transform $Y$ to $\tilde{Y}$ by using debiasing, so that
+$$
+\tilde{Y} = XB + C + DF^{(i)} + U^{(i)}V^{(i)} + E
+$$
+
+Then we fit a model to each repeat separately
+$$
+\tilde{Y}^{(i)} = X\hat{B} + \hat{L}^{(i)} + \hat{E}^{(i)}
+$$
+where $\hat{L}$ is low-rank residuals, and $\hat{E}$ are unstructured residuals.
+We look at the SVDs
+$$
+\hat{L}^{(i)} = \hat{U}^{(i)} \hat{D}^{(i)} \hat{V}^{(i)}
+$$
+(note $V$ is transposed compared to usual notation)
+
+For each component in the SVD $k = 1,..., r$, we compare
+
+* $\hat{U}^{(1)}_k$ to $\hat{U}^{(2)}_k$
+ * $\hat{V}^{(1)}_k$ to $\hat{V}^{(2)}_k$
+
+Then:
+
+ * If both $U_k$ and $V_k$ are correlated, then the $k$ th component is part of the misspecified signal
+ * If $U_k$ are correlated but $V_k$ are uncorrelated, then the component is spatial noise
+ * If both $U_k$ and $V_k$ are uncorrelated, then the component is low-rank noise
+ 
+Our estimates are as follows:
+
+ * For denoising, use $\hat{Y} = f(\tilde{Y} + U_k V_k)$ for $k$ which is part of misspecified signal
+ * For estimation, use $B$ (since we don't know how to interpret $U_k V_k$ in terms of fiber direction)
+ 
 
