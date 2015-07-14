@@ -45,6 +45,15 @@ if (plots) plot3d(pts)
 
 load('data/osmosis7804.RData')
 
+if (FALSE) {
+  plot3d(roi_inds, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
+  ##
+  plot3d(0, 0, 0, xlim = c(1, 81), ylim = c(1, 106), zlim = c(1, 76))
+  for (i in 1:max(clust)) {
+    points3d(roi_inds[clust == i, , drop = FALSE], col = rainbow(max(clust))[i])
+  }
+}
+
 ####
 ##  Correct for noise floor
 ####
@@ -109,21 +118,27 @@ library(fastICA)
 
 
 layout(matrix(1:2, 1, 2))
+k <- 2
 for (ii in 1:20) {
-  plot(svd(Y1[, clust == ii])$u[, 1], svd(Y2[, clust == ii])$u[, 1])
+  plot(svd(Y1[, clust == ii])$u[, k], svd(Y2[, clust == ii])$u[, k])
   title("U")
-  plot(svd(Y1[, clust == ii])$v[, 1], svd(Y2[, clust == ii])$v[, 1])
+  plot(svd(Y1[, clust == ii])$v[, k], svd(Y2[, clust == ii])$v[, k])
   title(paste(ii))
 }
+
+bvplot2(svd(Y1[, clust == ii])$u[, 1], size = 9)
+
 
 layout(matrix(1:2, 1, 2))
-for (ii in 1:20) {
-  plot(svd(resid1[, clust == ii])$u[, 1], svd(resid2[, clust == ii])$u[, 1])
+k <- 2
+for (ii in 1:10) {
+  plot(svd(resid1[, clust == ii])$u[, k], svd(resid2[, clust == ii])$u[, k])
   title("U")
-  plot(svd(resid1[, clust == ii])$v[, 1], svd(resid2[, clust == ii])$v[, 1])
+  plot(svd(resid1[, clust == ii])$v[, k], svd(resid2[, clust == ii])$v[, k])
   title(paste(ii))
 }
 
+bvplot2(svd(resid1[, clust == 20])$u[, 1], size = 9)
 
 ii <- 1
 
@@ -184,7 +199,7 @@ spplot(SC[11, ], size = 9)
 bvplot(TS[, 1], size = 50)
 bvplot2(TS[, 1], size = 20)
 
-bvplot2(TS[, 1], size = 20)
+bvplot2(-TS[, 1], size = 20)
 bvplot2(TS[, 2], size = 20)
 bvplot2(TS[, 3], size = 20)
 bvplot2(TS[, 4], size = 20)
@@ -203,6 +218,7 @@ bvplot2(TS[,80], size = 20)
 bvplot2(TS[,100], size = 20)
 bvplot2(TS[,120], size = 20)
 bvplot2(TS[,140], size = 20)
+bvplot2(TS[,149], size = 20)
 
 spplot(SC[140, ], size = 9)
 
