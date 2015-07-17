@@ -71,3 +71,6 @@ Mu_admm <- X %*% B_admm
 (err_admm <- sum((Mu - Mu_admm)^2))
 emd_admm <- emds(B_admm)
 mean(emd_admm)
+
+
+

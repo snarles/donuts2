@@ -184,12 +184,12 @@ bvplot2 <- function(x, eps = 0.1, ...) {
 }
 
 mean(diff_vol)
-Y1 <- array(sqrt(rchisq(length(diff_vol), df=2, ncp=diff_vol^2)), dim = dim(diff_vol))
-
+Y1 <- t(array(sqrt(rchisq(length(diff_vol), df=2, ncp=diff_vol^2)), dim = dim(diff_vol)))
+Y2 <- t(array(sqrt(rchisq(length(diff_vol), df=2, ncp=diff_vol^2)), dim = dim(diff_vol)))
 dim(Y1)
 
 
-res1 <- ICAspat(t(Y1), n.comp=149)
+res1 <- ICAspat(Y1, n.comp=149)
 dim(res1$time.series) # 150 100
 dim(res1$spatial.components) # 100 1801
 
@@ -213,3 +213,14 @@ spplot(SC[100, ], size = 9)
 
 bvplot2(X[, 1] - mean(X[, 1]), size = 20)
 
+####
+##  Fit NNLS
+####
+
+B1 <- multi_nnls(X, Y1, mc.cores = 3)
+mu1 <- sqrt((X %*% B1)^2 + s2)
+resid1 <- Y1 - mu1
+
+B2 <- multi_nnls(X, Y2, mc.cores = 3)
+mu2 <- sqrt((X %*% B2)^2 + s2)
+resid2 <- Y2 - mu2
