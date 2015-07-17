@@ -224,3 +224,17 @@ arc_emd <- function(v1, w1, v2, w2) {
   sum(M[as.matrix(res[, 1:2])] * res[, 3])
 }
 
+## visualization
+
+gimage <- function(a) image(fliplr(t(a)), col = gray(0:20/20))
+
+extract_vox <- function(V, vx) {
+  dm <- dim(V)
+  n <- dim(vx)[1]
+  ans <- matrix(0, n, dm[4])
+  for (i in 1:n) {
+    ans[i, ] <- V[vx[i, 1], vx[i, 2], vx[i, 3], ]
+  }
+  ans
+}
+
